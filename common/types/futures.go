@@ -13,13 +13,16 @@ type FuturesPosition struct {
 	Direction           Direction  `json:"direction"`
 	MarginType          MarginType `json:"margin_type"`
 }
-
 type Direction string
 
 const (
 	Long  Direction = "long"
 	Short Direction = "short"
 )
+
+func (d Direction) String() string {
+	return string(d)
+}
 
 type MarginType string
 
@@ -28,6 +31,10 @@ const (
 	Cross    MarginType = "cross"
 )
 
+func (m MarginType) String() string {
+	return string(m)
+}
+
 type Status string
 
 const (
@@ -35,3 +42,7 @@ const (
 	Closed     Status = "closed"
 	Liquidated Status = "liquidated"
 )
+
+func (s Status) String() string {
+	return string(s)
+}
