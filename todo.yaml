@@ -1,0 +1,10 @@
+# integration_checklist
+
+exchanges:
+  - kwenta (synthetix):
+    fetch_leaderboard: ❌
+    fetch_positions: ❌
+  - polynomial (synthetix):
+    fetch_leaderboard: ❌
+    fetch_positions: ❌
+  - gmx:
