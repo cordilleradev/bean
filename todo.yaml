@@ -1,10 +1,18 @@
 # integration_checklist
 
 exchanges:
-  - kwenta (synthetix):
+  - synthetix-v2 (kwenta-op and polynomial-op):
+    fetch_leaderboard: ❌ (use kwenta leaderboard)
+    fetch_positions: ❌
+  - gmx-v2 (arbitrum):
     fetch_leaderboard: ❌
     fetch_positions: ❌
-  - polynomial (synthetix):
+  - hyperliquid:
     fetch_leaderboard: ❌
     fetch_positions: ❌
-  - gmx:
+  - gains network (arbitrum):
+    fetch_leaderboard: ❌
+    fetch_positions: ❌
+  - drift network (solana):
+    fetch_leaderboard: x
+    fetch_positions: ❌
