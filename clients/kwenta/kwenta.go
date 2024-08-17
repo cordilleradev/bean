@@ -40,9 +40,14 @@ func (k *kwentaClient) GetSupportedMarginTypes() []types.MarginType {
 
 func (k *kwentaClient) GetLeaderboardPeriods() types.SupportedPeriods {
 	// Implementation here
-	return types.SupportedPeriods{
-		FixedPeriods:  []string{"total"},
-		CustomPeriods: nil,
+	return types.NewSupportedPeriods([]string{"total"}, nil)
+}
+
+func (k *kwentaClient) GetSupportedLeaderboardFields() []types.LeaderboardField {
+	return []types.LeaderboardField{
+		types.PeriodPnlAbsolute,
+		types.Volume,
+		types.TotalTrades,
 	}
 }
 
@@ -65,15 +70,12 @@ func (k *kwentaClient) GetLeaderboard(period string) ([]types.Trader, *types.API
 		volumeFloat, _ := strconv.ParseFloat(u.TotalVolume, 64)
 		volume := volumeFloat / math.Pow(10, 18)
 
-		periodPnlPercent := 0.0
-		if volume != 0 {
-			periodPnlPercent = pnl / volume
-		}
+		totalTrades, _ := strconv.Atoi(u.TotalTrades)
 		traders[i] = types.Trader{
 			UserId:            u.AccountOwner,
 			PeriodPnlAbsolute: pnl,
-			PeriodPnlPercent:  periodPnlPercent,
 			Volume:            volume,
+			TotalTrades:       totalTrades,
 		}
 	}
 

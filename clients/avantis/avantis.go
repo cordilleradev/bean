@@ -21,9 +21,16 @@ func (a *AvantisClient) GetSupportedMarginTypes() []types.MarginType {
 }
 
 func (a *AvantisClient) GetLeaderboardPeriods() types.SupportedPeriods {
-	return types.SupportedPeriods{
-		FixedPeriods:  []string{"total"},
-		CustomPeriods: nil,
+	return types.NewSupportedPeriods([]string{"total"}, nil)
+}
+
+func (a *AvantisClient) GetSupportedLeaderboardFields() []types.LeaderboardField {
+	return []types.LeaderboardField{
+		types.PeriodPnlPercent,
+		types.PeriodPnlAbsolute,
+		types.Volume,
+		types.TotalTrades,
+		types.Wins,
 	}
 }
 
@@ -41,6 +48,8 @@ func (a *AvantisClient) GetLeaderboard(period string) ([]types.Trader, *types.AP
 			PeriodPnlPercent:  u.TotalProfitPercentage / 100,
 			PeriodPnlAbsolute: u.TotalProfits,
 			Volume:            u.TotalPositionSizes,
+			TotalTrades:       u.TotalTrades,
+			Wins:              u.TotalWins,
 		}
 	}
 

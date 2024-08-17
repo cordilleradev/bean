@@ -26,9 +26,5 @@ exchanges:
     fetch_positions: ❌
 
   - gains network (arbitrum):
-    fetch_leaderboard: ❌
-    fetch_positions: ❌
-
-  - drift network (solana):
-    fetch_leaderboard: X
+    fetch_leaderboard: ✅
     fetch_positions: ❌

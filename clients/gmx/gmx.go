@@ -1,8 +1,6 @@
 package gmx
 
 import (
-	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/cordilleradev/bean/common"
@@ -28,23 +26,10 @@ func newGmxClient(
 	tokensUrl string,
 ) (*gmxClient, error) {
 	client := graphql.NewClient(indexerUrl)
-
 	tokenMap, marketNameMap, err := getMarkets(client, tokensUrl)
-
 	if err != nil {
 		return nil, err
 	}
-
-	tokenMapJson, err := json.MarshalIndent(tokenMap, "", "  ")
-	if err != nil {
-		return nil, err
-	}
-	marketNameMapJson, err := json.MarshalIndent(marketNameMap, "", "  ")
-	if err != nil {
-		return nil, err
-	}
-	fmt.Println("Token Map:", string(tokenMapJson))
-	fmt.Println("Market Name Map:", string(marketNameMapJson))
 
 	return &gmxClient{
 		exchangeName:  exchangeName,
@@ -72,6 +57,16 @@ func (g *gmxClient) GetLeaderboardPeriods() types.SupportedPeriods {
 			MaxDays: 90,
 		},
 	)
+}
+
+func (g *gmxClient) GetSupportedLeaderboardFields() []types.LeaderboardField {
+	return []types.LeaderboardField{
+		types.PeriodPnlPercent,
+		types.PeriodPnlAbsolute,
+		types.Volume,
+		types.TotalTrades,
+		types.Wins,
+	}
 }
 
 func (g *gmxClient) GetLeaderboard(period string) ([]types.Trader, *types.APIError) {
@@ -108,6 +103,8 @@ func (g *gmxClient) GetLeaderboard(period string) ([]types.Trader, *types.APIErr
 			PeriodPnlPercent:  relativePnl,
 			PeriodPnlAbsolute: absolutePnl,
 			Volume:            u.Volume,
+			TotalTrades:       u.ClosedCount,
+			Wins:              u.Wins,
 		}
 	}
 

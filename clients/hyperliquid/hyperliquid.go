@@ -26,9 +26,14 @@ func (c *HyperliquidClient) GetSupportedMarginTypes() []types.MarginType {
 }
 
 func (c *HyperliquidClient) GetLeaderboardPeriods() types.SupportedPeriods {
-	return types.SupportedPeriods{
-		FixedPeriods:  []string{"1d", "7d", "30d", "total"},
-		CustomPeriods: nil,
+	return types.NewSupportedPeriods([]string{"1d", "7d", "30d", "total"}, nil)
+}
+
+func (c *HyperliquidClient) GetSupportedLeaderboardFields() []types.LeaderboardField {
+	return []types.LeaderboardField{
+		types.PeriodPnlPercent,
+		types.PeriodPnlAbsolute,
+		types.Volume,
 	}
 }
 
