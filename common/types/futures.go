@@ -1,18 +1,30 @@
 package types
 
-type FuturesPosition struct {
-	Trader              string     `json:"trader"`
-	Platform            string     `json:"platform"`
-	Market              string     `json:"market"`
-	CollateralToken     string     `json:"collateral_token"`
-	EntryPrice          float64    `json:"entry_price"`
-	CurrentPrice        float64    `json:"current_price"`
-	IsolatedMarginShare float64    `json:"isolated_margin_share"`
-	CrossMarginShare    float64    `json:"cross_margin_share"`
-	Status              Status     `json:"status"`
-	Direction           Direction  `json:"direction"`
-	MarginType          MarginType `json:"margin_type"`
+type FuturesResponse struct {
+	Trader    string            `json:"trader"`
+	Platform  string            `json:"platform"`
+	Positions []FuturesPosition `json:"positions"`
 }
+
+type FuturesPosition struct {
+	Market       string     `json:"market"`
+	EntryPrice   float64    `json:"entry_price"`
+	CurrentPrice float64    `json:"current_price"`
+	Status       Status     `json:"status"`
+	Direction    Direction  `json:"direction"`
+	MarginType   MarginType `json:"margin_type"`
+
+	// Isolated margin specific
+	CollateralTokenAmount float64 `json:"collateral_token_amount,omitempty"`
+	CollateralToken       string  `json:"collateral_token,omitempty"`
+	LeverageAmount        float64 `json:"leverage_amount,omitempty"`
+
+	// Cross margin specific
+	HealthRatio      float64 `json:"health_ratio,omitempty"`
+	CrossMarginShare float64 `json:"cross_margin_share,omitempty"`
+	FreeCollateral   float64 `json:"free_collateral,omitempty"`
+}
+
 type Direction string
 
 const (

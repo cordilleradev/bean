@@ -2,7 +2,6 @@ package types
 
 import (
 	"fmt"
-	"strings"
 )
 
 type APIError struct {
@@ -29,6 +28,14 @@ func InvalidUserId(userId string) *APIError {
 	return NewAPIError(400, "invalid_user_id", fmt.Sprintf("%s is not a valid user_id", userId))
 }
 
-func InvalidPeriodError(period string, allowedPeriods []string) *APIError {
-	return NewAPIError(400, "invalid_leaderboard_period", fmt.Sprintf("%s is not a valid leaderboard_period (%s)", period, strings.Join(allowedPeriods, ", ")))
+func InvalidPeriodError(period, message string) *APIError {
+	return NewAPIError(400, "invalid_leaderboard_period", fmt.Sprintf("%s is not a valid leaderboard period (%s)", period, message))
+}
+
+func InvalidLimitError(limit int, allowedLimit int) *APIError {
+	return NewAPIError(400, "invalid_leaderboard_limit", fmt.Sprintf("%d is greater than maximum limit (%d)", limit, allowedLimit))
+}
+
+func FailedLeaderboardCall(err error) *APIError {
+	return NewAPIError(500, "failed_leaderboard_call", err.Error())
 }

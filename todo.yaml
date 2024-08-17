@@ -1,18 +1,34 @@
 # integration_checklist
 
 exchanges:
-  - synthetix-v2 (kwenta-op and polynomial-op):
-    fetch_leaderboard: ❌ (use kwenta leaderboard)
+  - kwenta (optimism):
+    fetch_leaderboard: ✅
     fetch_positions: ❌
+
+  - kwenta (base):
+    fetch_leaderboard: ✅
+    fetch_positions: ❌
+
   - gmx-v2 (arbitrum):
-    fetch_leaderboard: ❌
+    fetch_leaderboard: ✅
     fetch_positions: ❌
+
+  - gmx-v2 (avalanche):
+    fetch_leaderboard: ✅
+    fetch_positions: ❌
+
   - hyperliquid:
-    fetch_leaderboard: ❌
+    fetch_leaderboard: ✅
     fetch_positions: ❌
+
+  - avantis.fi (base):
+    fetch_leaderboard: ✅
+    fetch_positions: ❌
+
   - gains network (arbitrum):
     fetch_leaderboard: ❌
     fetch_positions: ❌
+
   - drift network (solana):
-    fetch_leaderboard: x
+    fetch_leaderboard: X
     fetch_positions: ❌
