@@ -2,11 +2,11 @@ package kwenta
 
 import "github.com/cordilleradev/bean/common/types"
 
-type KwentaOptimisimClient struct {
+type KwentaOptimismClient struct {
 	kwentaClient
 }
 
-func NewKwentaOptimismClient() (*KwentaOptimisimClient, error) {
+func NewKwentaOptimismClient() (*KwentaOptimismClient, error) {
 	opClient, err := newKwentaClient(
 		"kwenta-v2-optimism",
 		leaderboardApiUrlOp,
@@ -16,12 +16,12 @@ func NewKwentaOptimismClient() (*KwentaOptimisimClient, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &KwentaOptimisimClient{
+	return &KwentaOptimismClient{
 		kwentaClient: *opClient,
 	}, nil
 }
 
-func (c *KwentaOptimisimClient) FetchPositions(userId string) ([]types.FuturesResponse, *types.APIError) {
+func (c *KwentaOptimismClient) FetchPositions(userId string) ([]types.FuturesResponse, *types.APIError) {
 	// Implementation for fetching positions will go here
 	return nil, nil
 }

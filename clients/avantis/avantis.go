@@ -56,7 +56,7 @@ func (a *AvantisClient) GetLeaderboard(period string) ([]types.Trader, *types.AP
 	return traders, nil
 }
 
-func (a *AvantisClient) FetchPositions(userId string) ([]types.FuturesPosition, *types.APIError) {
+func (a *AvantisClient) FetchPositions(userId string) ([]types.FuturesResponse, *types.APIError) {
 	// Implementation here
 	return nil, nil
 }
