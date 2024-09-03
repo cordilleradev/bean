@@ -13,11 +13,13 @@ type FuturesPosition struct {
 	Status       Status     `json:"status"`
 	Direction    Direction  `json:"direction"`
 	MarginType   MarginType `json:"margin_type"`
+	SizeUsd      float64    `json:"size_usd"`
 
 	// Isolated margin specific
-	CollateralTokenAmount float64 `json:"collateral_token_amount,omitempty"`
-	CollateralToken       string  `json:"collateral_token,omitempty"`
-	LeverageAmount        float64 `json:"leverage_amount,omitempty"`
+	CollateralTokenAmount    float64 `json:"collateral_token_amount,omitempty"`
+	CollateralTokenAmountUsd float64 `json:"collateral_token_amount_usd,omitempty"`
+	CollateralToken          string  `json:"collateral_token,omitempty"`
+	LeverageAmount           float64 `json:"leverage_amount,omitempty"`
 
 	// Cross margin specific
 	HealthRatio      float64 `json:"health_ratio,omitempty"`

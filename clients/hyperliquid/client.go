@@ -36,7 +36,7 @@ func fetchPeriodStats() (*response, error) {
 	}
 
 	client := &http.Client{}
-	req, err := http.NewRequest("POST", "https://api-ui.hyperliquid.xyz/info", bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("POST", hyperliquidLeaderboardUrl, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return nil, err
 	}

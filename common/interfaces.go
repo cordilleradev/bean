@@ -8,5 +8,5 @@ type FuturesClient interface {
 	GetLeaderboardPeriods() types.SupportedPeriods
 	GetSupportedLeaderboardFields() []types.LeaderboardField
 	GetLeaderboard(period string) ([]types.Trader, *types.APIError)
-	FetchPositions(userId string) ([]types.FuturesResponse, *types.APIError)
+	FetchPositions(userId string) (*types.FuturesResponse, *types.APIError)
 }

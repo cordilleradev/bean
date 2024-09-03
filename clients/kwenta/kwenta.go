@@ -83,7 +83,7 @@ func (k *kwentaClient) GetLeaderboard(period string) ([]types.Trader, *types.API
 }
 
 //implemented by each chain of client
-// func (k *KwentaClient) FetchPositions(userId string) ([]types.FuturesResponse, *types.APIError) {
+// func (k *KwentaClient) FetchPositions(userId string) (*types.FuturesResponse, *types.APIError) {
 // 	// Implementation here
 // 	return nil, nil
 // }

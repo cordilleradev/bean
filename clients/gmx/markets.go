@@ -16,6 +16,7 @@ type market struct {
 	IndexToken string `json:"indexToken"`
 	LongToken  string `json:"longToken"`
 	ShortToken string `json:"shortToken"`
+	Name       string
 }
 
 // marketsResponse represents the structure of the GraphQL response
@@ -37,10 +38,10 @@ type tokenInfo struct {
 }
 
 // getMarkets retrieves the markets and tokens, returning any errors encountered
-func getMarkets(client *graphql.Client, tokensUrl string) (tokenMap map[string]tokenInfo, marketNameMap map[string]string, err error) {
+func getMarkets(client *graphql.Client, tokensUrl string) (tokenMap map[string]tokenInfo, marketMap map[string]market, err error) {
 
 	tokenMap = make(map[string]tokenInfo)
-	marketNameMap = make(map[string]string)
+	marketMap = make(map[string]market)
 
 	// Prepare the GraphQL query
 	req := graphql.NewRequest(`
@@ -92,9 +93,10 @@ func getMarkets(client *graphql.Client, tokensUrl string) (tokenMap map[string]t
 	for _, m := range marketsResponse.Markets {
 		token, ok := tokenMap[m.IndexToken]
 		if ok {
-			marketNameMap[m.ID] = token.Symbol + "-" + "USD"
+			m.Name = token.Symbol + "-" + "USD"
+			marketMap[m.ID] = m
 		}
 	}
 
-	return tokenMap, marketNameMap, nil
+	return tokenMap, marketMap, nil
 }

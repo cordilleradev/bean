@@ -1,95 +1,37 @@
 package main
 
-import (
-	"encoding/csv"
-	"fmt"
-	"log"
-	"os"
-	"runtime"
-	"sort"
-	"time"
+// func main() {
 
-	"github.com/cordilleradev/bean/clients/avantis"
-	"github.com/cordilleradev/bean/clients/gains"
-	"github.com/cordilleradev/bean/clients/gmx"
-	"github.com/cordilleradev/bean/clients/hyperliquid"
-	"github.com/cordilleradev/bean/clients/kwenta"
-	"github.com/cordilleradev/bean/common"
-)
+// 	// var arbRpcs = []string{
+// 	// 	"https://arbitrum.llamarpc.com",
+// 	// 	"https://api.zan.top/node/v1/arb/one/public",
+// 	// 	"https://api.stateless.solutions/arbitrum-one/v1/demo",
+// 	// 	"https://endpoints.omniatech.io/v1/arbitrum/one/public",
+// 	// 	"https://1rpc.io/arb",
+// 	// 	"https://arbitrum.rpc.subquery.network/public",
+// 	// 	"https://arbitrum.blockpi.network/v1/rpc/public",
+// 	// 	"https://arb-pokt.nodies.app",
+// 	// 	"https://arbitrum.meowrpc.com",
+// 	// 	"https://arbitrum.drpc.org",
+// 	// 	"https://arbitrum-one.public.blastapi.io",
+// 	// }
 
-func main() {
-	breakpoint("Before initializing clients")
-	gmxAr, _ := gmx.NewGmxArbitrumClient()
-	gmxAx, _ := gmx.NewGmxAvalancheClient()
-	hyp, _ := hyperliquid.NewHyperliquidClient()
-	kweB, _ := kwenta.NewKwentaBaseClient()
-	kweO, _ := kwenta.NewKwentaOptimismClient()
-	gain, _ := gains.NewGainsClient()
-	avan, _ := avantis.NewAvantisClient()
+// 	baseRpcs := []string{
+// 		"https://base.llamarpc.com",
+// 		"https://mainnet.base.org",
+// 		"https://developer-access-mainnet.base.org",
+// 		"https://base-rpc.publicnode.com",
+// 		"https://base.blockpi.network/v1/rpc/public",
+// 		"https://base-mainnet.public.blastapi.io",
+// 		"https://base.meowrpc.com",
+// 		"https://endpoints.omniatech.io/v1/base/mainnet/public",
+// 		"https://base.gateway.tenderly.co",
+// 		"https://gateway.tenderly.co/public/base",
+// 		"https://1rpc.io/base",
+// 		"https://base.rpc.subquery.network/public",
+// 		"https://base-pokt.nodies.app",
+// 		"https://base.api.onfinality.io/public",
+// 		"https://base.drpc.org",
+// 	}
 
-	breakpoint("After initializing clients")
-	clients := []common.FuturesClient{gmxAr, gmxAx, hyp, kweB, kweO, gain, avan}
-	file, err := os.Create("traders_leaderboard.csv")
-	if err != nil {
-		log.Fatalf("Failed to create file: %s", err)
-	}
-	defer file.Close()
-
-	writer := csv.NewWriter(file)
-	defer writer.Flush()
-
-	header := []string{"user_id", "period_pnl_percent", "period_pnl_absolute", "total_trades", "wins", "volume", "avg_win", "avg_loss", "exchange", "period"}
-	if err := writer.Write(header); err != nil {
-		log.Fatalf("Failed to write header: %s", err)
-	}
-
-	breakpoint("Before iterating over clients")
-	for _, client := range clients {
-		supportedPeriods := client.GetLeaderboardPeriods().FixedPeriods
-		for _, period := range supportedPeriods {
-			traders, apiErr := client.GetLeaderboard(period)
-			if apiErr != nil {
-				log.Printf("Error fetching leaderboard for %s: %s", client.ExchangeName(), apiErr)
-				continue
-			}
-			sort.Slice(traders, func(i, j int) bool {
-				return traders[i].PeriodPnlAbsolute > traders[j].PeriodPnlAbsolute
-			})
-			for i, trader := range traders {
-				if i >= 100 {
-					break
-				}
-				record := []string{
-					trader.UserId,
-					formatFloat(trader.PeriodPnlPercent),
-					formatFloat(trader.PeriodPnlAbsolute),
-					formatInt(trader.TotalTrades),
-					formatInt(trader.Wins),
-					formatFloat(trader.Volume),
-					formatFloat(trader.AvgWin),
-					formatFloat(trader.AvgLoss),
-					client.ExchangeName(),
-					period,
-				}
-				if err := writer.Write(record); err != nil {
-					log.Fatalf("Failed to write record: %s", err)
-				}
-			}
-		}
-		breakpoint(fmt.Sprintf("After processing client: %s", client.ExchangeName()))
-	}
-}
-
-func formatFloat(value float64) string {
-	return fmt.Sprintf("%.2f", value)
-}
-
-func formatInt(value int) string {
-	return fmt.Sprintf("%d", value)
-}
-
-func breakpoint(message string) {
-	_, file, line, _ := runtime.Caller(1)
-	log.Printf("BREAKPOINT: %s - %s:%d", message, file, line)
-	time.Sleep(2 * time.Second) // Simulate a pause for debugging
-}
+// }
