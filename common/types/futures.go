@@ -7,13 +7,14 @@ type FuturesResponse struct {
 }
 
 type FuturesPosition struct {
-	Market       string     `json:"market"`
-	EntryPrice   float64    `json:"entry_price"`
-	CurrentPrice float64    `json:"current_price"`
-	Status       Status     `json:"status"`
-	Direction    Direction  `json:"direction"`
-	MarginType   MarginType `json:"margin_type"`
-	SizeUsd      float64    `json:"size_usd"`
+	Market        string     `json:"market"`
+	EntryPrice    float64    `json:"entry_price"`
+	CurrentPrice  float64    `json:"current_price"`
+	Status        Status     `json:"status"`
+	Direction     Direction  `json:"direction"`
+	MarginType    MarginType `json:"margin_type"`
+	SizeUsd       float64    `json:"size_usd"`
+	UnrealizedPnl float64    `json:"unrealized_pnl"`
 
 	// Isolated margin specific
 	CollateralTokenAmount    float64 `json:"collateral_token_amount,omitempty"`

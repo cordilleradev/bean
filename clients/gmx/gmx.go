@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/cordilleradev/bean/common"
+	gmx_abis "github.com/cordilleradev/bean/common/abigen/gmx"
 	"github.com/cordilleradev/bean/common/types"
 	"github.com/cordilleradev/bean/common/utils"
 	ethCommon "github.com/ethereum/go-ethereum/common"
@@ -124,57 +125,18 @@ func (g *gmxClient) GetLeaderboard(period string) ([]types.Trader, *types.APIErr
 }
 
 func (g *gmxClient) FetchPositions(userId string) (*types.FuturesResponse, *types.APIError) {
-
 	if !ethCommon.IsHexAddress(userId) {
 		return nil, types.InvalidUserId(userId)
 	}
 
-	positionsRaw := g.connectionPool.getPositions(
+	positionsRaw := g.connectionPool.GetPositions(
 		ethCommon.HexToAddress(userId),
 		g.gmxDataStoreContractAddress,
 	)
 
 	positionsList := make([]types.FuturesPosition, len(positionsRaw))
-
 	for i, p := range positionsRaw {
-		market := g.marketNameMap[p.Addresses.Market.Hex()]
-		collateralTokenInfo := g.tokenMap[p.Addresses.CollateralToken.Hex()]
-
-		marketTokenAddress := market.LongToken
-		marketTokenInfo := g.tokenMap[marketTokenAddress]
-
-		sizeInUsd := utils.BigIntToRelevantFloat(p.Numbers.SizeInUsd, 30, 5)
-
-		sizeInTokens := utils.BigIntToRelevantFloat(p.Numbers.SizeInTokens, float64(marketTokenInfo.Decimals), 5)
-
-		entryPrice := utils.RoundToNDecimals(sizeInUsd/sizeInTokens, 4)
-
-		collateralAmount := utils.BigIntToRelevantFloat(p.Numbers.CollateralAmount, float64(collateralTokenInfo.Decimals), 5)
-
-		collateralTokenPrice := g.priceCache.getPrice(p.Addresses.CollateralToken.Hex())
-		marketTokenPrice := g.priceCache.getPrice(marketTokenAddress)
-
-		leverage := utils.RoundToNDecimals(
-			(marketTokenPrice*sizeInTokens)/(collateralTokenPrice*collateralAmount),
-			5,
-		)
-
-		positionsList[i] = types.FuturesPosition{
-			// Basic fields
-			Market:       market.Name,
-			Status:       types.Open,
-			Direction:    utils.IsLongAsType(p.Flags.IsLong),
-			MarginType:   types.Isolated,
-			SizeUsd:      sizeInUsd,
-			EntryPrice:   entryPrice,
-			CurrentPrice: marketTokenPrice,
-
-			// Isolated Margin fields
-			CollateralToken:          collateralTokenInfo.Symbol,
-			CollateralTokenAmount:    collateralAmount,
-			CollateralTokenAmountUsd: utils.RoundToNDecimals(collateralAmount*collateralTokenPrice, 5),
-			LeverageAmount:           leverage,
-		}
+		positionsList[i] = g.formatToFuturesPosition(p)
 	}
 
 	return &types.FuturesResponse{
@@ -184,17 +146,40 @@ func (g *gmxClient) FetchPositions(userId string) (*types.FuturesResponse, *type
 	}, nil
 }
 
-// func (g *gmxClient) UpdateMarketsAndTokens() error {
-// 	tokens, markets, err := getMarkets(g.gqlClient, g.tokensUrl)
+func (g *gmxClient) formatToFuturesPosition(p gmx_abis.PositionProps) types.FuturesPosition {
+	market := g.marketNameMap[p.Addresses.Market.Hex()]
+	collateralTokenInfo := g.tokenMap[p.Addresses.CollateralToken.Hex()]
 
-// 	if err != nil {
-// 		return err
-// 	}
+	marketTokenAddress := market.LongToken
+	marketTokenInfo := g.tokenMap[marketTokenAddress]
 
-// 	g.mutex.Lock()
-// 	g.tokenMap = tokens
-// 	g.marketNameMap = markets
-// 	g.mutex.Unlock()
+	sizeInUsd := utils.BigIntToRelevantFloat(p.Numbers.SizeInUsd, 30, 5)
+	sizeInTokens := utils.BigIntToRelevantFloat(p.Numbers.SizeInTokens, float64(marketTokenInfo.Decimals), 5)
+	entryPrice := utils.RoundToNDecimalsOrSigFigs(sizeInUsd/sizeInTokens, 5)
+	collateralAmount := utils.BigIntToRelevantFloat(p.Numbers.CollateralAmount, float64(collateralTokenInfo.Decimals), 5)
 
-// 	return nil
-// }
+	collateralTokenPrice := g.priceCache.getPrice(p.Addresses.CollateralToken.Hex())
+	marketTokenPrice := g.priceCache.getPrice(marketTokenAddress)
+
+	leverage := utils.RoundToNDecimalsOrSigFigs(
+		(marketTokenPrice*sizeInTokens)/(collateralTokenPrice*collateralAmount),
+		5,
+	)
+
+	return types.FuturesPosition{
+		// Basic fields
+		Market:       market.Name,
+		Status:       types.Open,
+		Direction:    utils.IsLongAsType(p.Flags.IsLong),
+		MarginType:   types.Isolated,
+		SizeUsd:      sizeInUsd,
+		EntryPrice:   entryPrice,
+		CurrentPrice: marketTokenPrice,
+
+		// Isolated Margin fields
+		CollateralToken:          collateralTokenInfo.Symbol,
+		CollateralTokenAmount:    collateralAmount,
+		CollateralTokenAmountUsd: utils.RoundToNDecimalsOrSigFigs(collateralAmount*collateralTokenPrice, 5),
+		LeverageAmount:           leverage,
+	}
+}

@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"strconv"
 	"sync"
+
+	"github.com/cordilleradev/bean/common/utils"
 )
 
 type priceCache struct {
@@ -47,7 +49,7 @@ func (pc *priceCache) updatePrices(url string) error {
 		if err != nil {
 			return err
 		}
-		pc.prices[token] = price / 1e30 // Converting the price to float
+		pc.prices[token] = utils.RoundToNDecimalsOrSigFigs(price/1e30, 5) // Converting the price to float
 	}
 
 	return nil

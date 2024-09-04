@@ -11,11 +11,11 @@ exchanges:
 
   - gmx-v2 (arbitrum):
     fetch_leaderboard: ✅
-    fetch_positions: ❌
+    fetch_positions: ✅
 
   - gmx-v2 (avalanche):
     fetch_leaderboard: ✅
-    fetch_positions: ❌
+    fetch_positions: ✅
 
   - hyperliquid:
     fetch_leaderboard: ✅
@@ -23,8 +23,10 @@ exchanges:
 
   - avantis.fi (base):
     fetch_leaderboard: ✅
-    fetch_positions: ❌
+    fetch_positions: ✅
 
   - gains network (arbitrum):
     fetch_leaderboard: ✅
     fetch_positions: ❌
+
+remove price cache and integrate into pool

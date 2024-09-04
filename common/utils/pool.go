@@ -9,19 +9,19 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
-type CommonPoolHelper[T any] struct {
+type EvmRpcPool[T any] struct {
 	connections []T
 	mu          sync.Mutex
 	index       int
 }
 
 // Initialize CommonPoolHelper with a constructor
-func NewCommonPoolHelper[T any](rpcUrls []string, contractAddress common.Address, clientCtor func(common.Address, *ethclient.Client) (T, error)) (*CommonPoolHelper[T], error) {
+func NewCommonPoolHelper[T any](rpcUrls []string, contractAddress common.Address, clientCtor func(common.Address, *ethclient.Client) (T, error)) (*EvmRpcPool[T], error) {
 	callers := returnCallers(rpcUrls, contractAddress, clientCtor)
 	if len(callers) == 0 {
 		return nil, errors.New("no valid RPCs provided")
 	}
-	return &CommonPoolHelper[T]{
+	return &EvmRpcPool[T]{
 		connections: callers,
 		index:       0,
 	}, nil
@@ -60,14 +60,14 @@ func returnCallers[T any](rpcUrls []string, contractAddress common.Address, clie
 }
 
 // Return the number of RPC clients in the pool
-func (p *CommonPoolHelper[T]) NumCallers() int {
+func (p *EvmRpcPool[T]) NumCallers() int {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	return len(p.connections)
 }
 
 // Return the next RPC client in a round-robin fashion
-func (p *CommonPoolHelper[T]) NextCaller() T {
+func (p *EvmRpcPool[T]) NextCaller() T {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	if len(p.connections) == 0 {
