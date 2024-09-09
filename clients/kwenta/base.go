@@ -25,6 +25,6 @@ func NewKwentaBaseClient() (*KwentaBaseClient, error) {
 
 }
 
-func (c *KwentaBaseClient) FetchPositions(userId string) (*types.FuturesResponse, *types.APIError) {
+func (c *KwentaBaseClient) FetchPositions(userId string) ([]types.FuturesPosition, *types.APIError) {
 	return nil, nil
 }

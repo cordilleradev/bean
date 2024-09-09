@@ -1,7 +1,204 @@
 [
+  { "type": "constructor", "inputs": [], "stateMutability": "nonpayable" },
+  {
+    "type": "function",
+    "name": "addFee",
+    "inputs": [
+      {
+        "name": "_fee",
+        "type": "tuple",
+        "internalType": "struct IPairStorage.Fee",
+        "components": [
+          { "name": "name", "type": "string", "internalType": "string" },
+          { "name": "openFeeP", "type": "uint256", "internalType": "uint256" },
+          { "name": "closeFeeP", "type": "uint256", "internalType": "uint256" },
+          {
+            "name": "limitOrderFeeP",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "minLevPosUSDC",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "addGroup",
+    "inputs": [
+      {
+        "name": "_group",
+        "type": "tuple",
+        "internalType": "struct IPairStorage.Group",
+        "components": [
+          { "name": "name", "type": "string", "internalType": "string" },
+          {
+            "name": "minLeverage",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "maxLeverage",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "maxOpenInterestP",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "addPair",
+    "inputs": [
+      {
+        "name": "_pair",
+        "type": "tuple",
+        "internalType": "struct IPairStorage.Pair",
+        "components": [
+          { "name": "from", "type": "string", "internalType": "string" },
+          { "name": "to", "type": "string", "internalType": "string" },
+          {
+            "name": "feed",
+            "type": "tuple",
+            "internalType": "struct IPairStorage.Feed",
+            "components": [
+              {
+                "name": "maxDeviationP",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              { "name": "feedId", "type": "bytes32", "internalType": "bytes32" }
+            ]
+          },
+          {
+            "name": "backupFeed",
+            "type": "tuple",
+            "internalType": "struct IPairStorage.BackupFeed",
+            "components": [
+              {
+                "name": "maxDeviationP",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              { "name": "feedId", "type": "address", "internalType": "address" }
+            ]
+          },
+          { "name": "spreadP", "type": "uint256", "internalType": "uint256" },
+          {
+            "name": "priceImpactMultiplier",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "skewImpactMultiplier",
+            "type": "int256",
+            "internalType": "int256"
+          },
+          {
+            "name": "groupIndex",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          { "name": "feeIndex", "type": "uint256", "internalType": "uint256" },
+          {
+            "name": "groupOpenInterestPecentage",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "maxWalletOI",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "addSkewOpenFees",
+    "inputs": [
+      {
+        "name": "_skewFee",
+        "type": "tuple",
+        "internalType": "struct IPairStorage.SkewFee",
+        "components": [
+          {
+            "name": "eqParams",
+            "type": "int256[2][10]",
+            "internalType": "int256[2][10]"
+          }
+        ]
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
   {
     "type": "function",
     "name": "blockOILimit",
+    "inputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "currentOrderId",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "delistPair",
+    "inputs": [
+      { "name": "_pairIndex", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "fees",
+    "inputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "outputs": [
+      { "name": "name", "type": "string", "internalType": "string" },
+      { "name": "openFeeP", "type": "uint256", "internalType": "uint256" },
+      { "name": "closeFeeP", "type": "uint256", "internalType": "uint256" },
+      {
+        "name": "limitOrderFeeP",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      { "name": "minLevPosUSDC", "type": "uint256", "internalType": "uint256" }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "feesCount",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "groupMaxOI",
     "inputs": [
       { "name": "_pairIndex", "type": "uint256", "internalType": "uint256" }
     ],
@@ -10,22 +207,76 @@
   },
   {
     "type": "function",
-    "name": "groupMaxOI",
-    "inputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "name": "groupOI",
+    "inputs": [
+      { "name": "_pairIndex", "type": "uint256", "internalType": "uint256" }
+    ],
     "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
     "stateMutability": "view"
   },
   {
     "type": "function",
-    "name": "groupOI",
+    "name": "groupOIs",
+    "inputs": [
+      { "name": "", "type": "uint256", "internalType": "uint256" },
+      { "name": "", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "groups",
     "inputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "outputs": [
+      { "name": "name", "type": "string", "internalType": "string" },
+      { "name": "minLeverage", "type": "uint256", "internalType": "uint256" },
+      { "name": "maxLeverage", "type": "uint256", "internalType": "uint256" },
+      {
+        "name": "maxOpenInterestP",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "groupsCount",
+    "inputs": [],
     "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
     "stateMutability": "view"
   },
   {
     "type": "function",
     "name": "guaranteedSlEnabled",
-    "inputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "inputs": [
+      { "name": "_pairIndex", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "bool", "internalType": "bool" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "initialize",
+    "inputs": [
+      { "name": "_storageT", "type": "address", "internalType": "address" },
+      {
+        "name": "_currentOrderId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "isPairListed",
+    "inputs": [
+      { "name": "", "type": "string", "internalType": "string" },
+      { "name": "", "type": "string", "internalType": "string" }
+    ],
     "outputs": [{ "name": "", "type": "bool", "internalType": "bool" }],
     "stateMutability": "view"
   },
@@ -36,6 +287,16 @@
       { "name": "_pairIndex", "type": "uint256", "internalType": "uint256" }
     ],
     "outputs": [{ "name": "", "type": "bool", "internalType": "bool" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "lossProtection",
+    "inputs": [
+      { "name": "", "type": "uint256", "internalType": "uint256" },
+      { "name": "", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
     "stateMutability": "view"
   },
   {
@@ -60,7 +321,9 @@
   {
     "type": "function",
     "name": "pairBackupFeed",
-    "inputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "inputs": [
+      { "name": "_pairIndex", "type": "uint256", "internalType": "uint256" }
+    ],
     "outputs": [
       {
         "name": "",
@@ -81,14 +344,18 @@
   {
     "type": "function",
     "name": "pairCloseFeeP",
-    "inputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "inputs": [
+      { "name": "_pairIndex", "type": "uint256", "internalType": "uint256" }
+    ],
     "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
     "stateMutability": "view"
   },
   {
     "type": "function",
     "name": "pairFeed",
-    "inputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "inputs": [
+      { "name": "_pairIndex", "type": "uint256", "internalType": "uint256" }
+    ],
     "outputs": [
       {
         "name": "",
@@ -109,14 +376,18 @@
   {
     "type": "function",
     "name": "pairGroupIndex",
-    "inputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "inputs": [
+      { "name": "_pairIndex", "type": "uint256", "internalType": "uint256" }
+    ],
     "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
     "stateMutability": "view"
   },
   {
     "type": "function",
     "name": "pairJob",
-    "inputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "inputs": [
+      { "name": "_pairIndex", "type": "uint256", "internalType": "uint256" }
+    ],
     "outputs": [
       { "name": "", "type": "string", "internalType": "string" },
       { "name": "", "type": "string", "internalType": "string" },
@@ -129,14 +400,18 @@
   {
     "type": "function",
     "name": "pairLimitOrderFeeP",
-    "inputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "inputs": [
+      { "name": "_pairIndex", "type": "uint256", "internalType": "uint256" }
+    ],
     "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
     "stateMutability": "view"
   },
   {
     "type": "function",
     "name": "pairMaxLeverage",
-    "inputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "inputs": [
+      { "name": "_pairIndex", "type": "uint256", "internalType": "uint256" }
+    ],
     "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
     "stateMutability": "view"
   },
@@ -152,14 +427,18 @@
   {
     "type": "function",
     "name": "pairMinLevPosUSDC",
-    "inputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "inputs": [
+      { "name": "_pairIndex", "type": "uint256", "internalType": "uint256" }
+    ],
     "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
     "stateMutability": "view"
   },
   {
     "type": "function",
     "name": "pairMinLeverage",
-    "inputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "inputs": [
+      { "name": "_pairIndex", "type": "uint256", "internalType": "uint256" }
+    ],
     "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
     "stateMutability": "view"
   },
@@ -167,9 +446,13 @@
     "type": "function",
     "name": "pairOpenFeeP",
     "inputs": [
-      { "name": "", "type": "uint256", "internalType": "uint256" },
-      { "name": "", "type": "uint256", "internalType": "uint256" },
-      { "name": "", "type": "bool", "internalType": "bool" }
+      { "name": "_pairIndex", "type": "uint256", "internalType": "uint256" },
+      {
+        "name": "_leveragedPosition",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      { "name": "_buy", "type": "bool", "internalType": "bool" }
     ],
     "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
     "stateMutability": "view"
@@ -195,8 +478,180 @@
   {
     "type": "function",
     "name": "pairSpreadP",
-    "inputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "inputs": [
+      { "name": "_pairIndex", "type": "uint256", "internalType": "uint256" }
+    ],
     "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "pairs",
+    "inputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "outputs": [
+      { "name": "from", "type": "string", "internalType": "string" },
+      { "name": "to", "type": "string", "internalType": "string" },
+      {
+        "name": "feed",
+        "type": "tuple",
+        "internalType": "struct IPairStorage.Feed",
+        "components": [
+          {
+            "name": "maxDeviationP",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          { "name": "feedId", "type": "bytes32", "internalType": "bytes32" }
+        ]
+      },
+      {
+        "name": "backupFeed",
+        "type": "tuple",
+        "internalType": "struct IPairStorage.BackupFeed",
+        "components": [
+          {
+            "name": "maxDeviationP",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          { "name": "feedId", "type": "address", "internalType": "address" }
+        ]
+      },
+      { "name": "spreadP", "type": "uint256", "internalType": "uint256" },
+      {
+        "name": "priceImpactMultiplier",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "skewImpactMultiplier",
+        "type": "int256",
+        "internalType": "int256"
+      },
+      { "name": "groupIndex", "type": "uint256", "internalType": "uint256" },
+      { "name": "feeIndex", "type": "uint256", "internalType": "uint256" },
+      {
+        "name": "groupOpenInterestPecentage",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      { "name": "maxWalletOI", "type": "uint256", "internalType": "uint256" }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "pairsBackend",
+    "inputs": [
+      { "name": "_index", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct IPairStorage.Pair",
+        "components": [
+          { "name": "from", "type": "string", "internalType": "string" },
+          { "name": "to", "type": "string", "internalType": "string" },
+          {
+            "name": "feed",
+            "type": "tuple",
+            "internalType": "struct IPairStorage.Feed",
+            "components": [
+              {
+                "name": "maxDeviationP",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              { "name": "feedId", "type": "bytes32", "internalType": "bytes32" }
+            ]
+          },
+          {
+            "name": "backupFeed",
+            "type": "tuple",
+            "internalType": "struct IPairStorage.BackupFeed",
+            "components": [
+              {
+                "name": "maxDeviationP",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              { "name": "feedId", "type": "address", "internalType": "address" }
+            ]
+          },
+          { "name": "spreadP", "type": "uint256", "internalType": "uint256" },
+          {
+            "name": "priceImpactMultiplier",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "skewImpactMultiplier",
+            "type": "int256",
+            "internalType": "int256"
+          },
+          {
+            "name": "groupIndex",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          { "name": "feeIndex", "type": "uint256", "internalType": "uint256" },
+          {
+            "name": "groupOpenInterestPecentage",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "maxWalletOI",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      },
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct IPairStorage.Group",
+        "components": [
+          { "name": "name", "type": "string", "internalType": "string" },
+          {
+            "name": "minLeverage",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "maxLeverage",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "maxOpenInterestP",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      },
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct IPairStorage.Fee",
+        "components": [
+          { "name": "name", "type": "string", "internalType": "string" },
+          { "name": "openFeeP", "type": "uint256", "internalType": "uint256" },
+          { "name": "closeFeeP", "type": "uint256", "internalType": "uint256" },
+          {
+            "name": "limitOrderFeeP",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "minLevPosUSDC",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      }
+    ],
     "stateMutability": "view"
   },
   {
@@ -208,12 +663,214 @@
   },
   {
     "type": "function",
+    "name": "setBlockOILImits",
+    "inputs": [
+      {
+        "name": "_pairIndex",
+        "type": "uint256[]",
+        "internalType": "uint256[]"
+      },
+      { "name": "_limits", "type": "uint256[]", "internalType": "uint256[]" }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "skewedFeesCount",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "storageT",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract ITradingStorage"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "udpateSkewOpenFees",
+    "inputs": [
+      { "name": "_pairIndex", "type": "uint256", "internalType": "uint256" },
+      {
+        "name": "_skewFee",
+        "type": "tuple",
+        "internalType": "struct IPairStorage.SkewFee",
+        "components": [
+          {
+            "name": "eqParams",
+            "type": "int256[2][10]",
+            "internalType": "int256[2][10]"
+          }
+        ]
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "updateFee",
+    "inputs": [
+      { "name": "_id", "type": "uint256", "internalType": "uint256" },
+      {
+        "name": "_fee",
+        "type": "tuple",
+        "internalType": "struct IPairStorage.Fee",
+        "components": [
+          { "name": "name", "type": "string", "internalType": "string" },
+          { "name": "openFeeP", "type": "uint256", "internalType": "uint256" },
+          { "name": "closeFeeP", "type": "uint256", "internalType": "uint256" },
+          {
+            "name": "limitOrderFeeP",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "minLevPosUSDC",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "updateGroup",
+    "inputs": [
+      { "name": "_id", "type": "uint256", "internalType": "uint256" },
+      {
+        "name": "_group",
+        "type": "tuple",
+        "internalType": "struct IPairStorage.Group",
+        "components": [
+          { "name": "name", "type": "string", "internalType": "string" },
+          {
+            "name": "minLeverage",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "maxLeverage",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "maxOpenInterestP",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "updateGroupOI",
     "inputs": [
-      { "name": "", "type": "uint256", "internalType": "uint256" },
-      { "name": "", "type": "uint256", "internalType": "uint256" },
-      { "name": "", "type": "bool", "internalType": "bool" },
-      { "name": "", "type": "bool", "internalType": "bool" }
+      { "name": "_pairIndex", "type": "uint256", "internalType": "uint256" },
+      { "name": "_amount", "type": "uint256", "internalType": "uint256" },
+      { "name": "_long", "type": "bool", "internalType": "bool" },
+      { "name": "_increase", "type": "bool", "internalType": "bool" }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "updateLossProtectionMultiplier",
+    "inputs": [
+      { "name": "_pairIndex", "type": "uint256", "internalType": "uint256" },
+      { "name": "_tier", "type": "uint256[]", "internalType": "uint256[]" },
+      {
+        "name": "_multiplierPercent",
+        "type": "uint256[]",
+        "internalType": "uint256[]"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "updatePair",
+    "inputs": [
+      { "name": "_pairIndex", "type": "uint256", "internalType": "uint256" },
+      {
+        "name": "_pair",
+        "type": "tuple",
+        "internalType": "struct IPairStorage.Pair",
+        "components": [
+          { "name": "from", "type": "string", "internalType": "string" },
+          { "name": "to", "type": "string", "internalType": "string" },
+          {
+            "name": "feed",
+            "type": "tuple",
+            "internalType": "struct IPairStorage.Feed",
+            "components": [
+              {
+                "name": "maxDeviationP",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              { "name": "feedId", "type": "bytes32", "internalType": "bytes32" }
+            ]
+          },
+          {
+            "name": "backupFeed",
+            "type": "tuple",
+            "internalType": "struct IPairStorage.BackupFeed",
+            "components": [
+              {
+                "name": "maxDeviationP",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              { "name": "feedId", "type": "address", "internalType": "address" }
+            ]
+          },
+          { "name": "spreadP", "type": "uint256", "internalType": "uint256" },
+          {
+            "name": "priceImpactMultiplier",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "skewImpactMultiplier",
+            "type": "int256",
+            "internalType": "int256"
+          },
+          {
+            "name": "groupIndex",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          { "name": "feeIndex", "type": "uint256", "internalType": "uint256" },
+          {
+            "name": "groupOpenInterestPecentage",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "maxWalletOI",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      }
     ],
     "outputs": [],
     "stateMutability": "nonpayable"
@@ -297,6 +954,19 @@
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "Initialized",
+    "inputs": [
+      {
+        "name": "version",
+        "type": "uint8",
+        "indexed": false,
+        "internalType": "uint8"
       }
     ],
     "anonymous": false

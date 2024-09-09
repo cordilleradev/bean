@@ -1,6 +1,8 @@
 package avantis
 
 import (
+	"errors"
+
 	avantis_multicall_abis "github.com/cordilleradev/bean/common/abigen/avantis/multiCall"
 	"github.com/cordilleradev/bean/common/types"
 	"github.com/cordilleradev/bean/common/utils"
@@ -9,15 +11,34 @@ import (
 
 type AvantisClient struct {
 	connectionPool *avantisConnectionPool
+	pairsCache     *PairsCache
 }
 
 func NewAvantisClient(rpcs []string) (*AvantisClient, error) {
-	connectionPool, err := newAvantisConnectionPool(rpcs, avantisMultiCallContractAddress)
+	if len(rpcs) < 2 {
+		return nil, errors.New("at least two RPC URLs are required")
+	}
+	connectionPool, err := newAvantisConnectionPool(rpcs[1:], avantisMultiCallContractAddress)
 	if err != nil {
 		return nil, err
 	}
 
-	return &AvantisClient{connectionPool: connectionPool}, nil
+	c, err := NewPairsCache(
+		rpcs[0],
+		"contracts/abis/AvantisMulticall.json",
+		"contracts/abis/AvantisPairStorage.json",
+		avantisMultiCallContractAddress,
+		avantisPairsStorageAddress,
+	)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return &AvantisClient{
+		connectionPool: connectionPool,
+		pairsCache:     c,
+	}, nil
 }
 
 func (a *AvantisClient) ExchangeName() string {
@@ -65,7 +86,7 @@ func (a *AvantisClient) GetLeaderboard(period string) ([]types.Trader, *types.AP
 	return traders, nil
 }
 
-func (a *AvantisClient) FetchPositions(userId string) (*types.FuturesResponse, *types.APIError) {
+func (a *AvantisClient) FetchPositions(userId string) ([]types.FuturesPosition, *types.APIError) {
 	if !ethCommon.IsHexAddress(userId) {
 		return nil, types.InvalidUserId(userId)
 	}
@@ -75,31 +96,29 @@ func (a *AvantisClient) FetchPositions(userId string) (*types.FuturesResponse, *
 	positionsList := make([]types.FuturesPosition, 0)
 	for _, p := range rawPositions {
 		if p.Trade.Trader.Hex() != "0x0000000000000000000000000000000000000000" {
-			positionsList = append(positionsList, formatFuturesPositions(p))
+			positionsList = append(positionsList, a.formatFuturesPositions(p))
 		}
 	}
-
-	return &types.FuturesResponse{
-		Trader:    userId,
-		Platform:  a.ExchangeName(),
-		Positions: positionsList,
-	}, nil
+	return positionsList, nil
 }
-
-func formatFuturesPositions(p avantis_multicall_abis.IMulticallAggregatedTrade) types.FuturesPosition {
+func (a *AvantisClient) formatFuturesPositions(p avantis_multicall_abis.IMulticallAggregatedTrade) types.FuturesPosition {
 
 	entryPrice := utils.BigIntToRelevantFloat(p.Trade.OpenPrice, 10, 5)
 	leverage := utils.BigIntToRelevantFloat(p.Trade.Leverage, 10, 5)
 
 	positionSize := utils.BigIntToRelevantFloat(p.TradeInfo.OpenInterestUSDC, 6, 5)
 
+	// Fetch the market pair information from the cache
+	marketIndex := int(p.Trade.PairIndex.Int64())
+	marketPair, _ := a.pairsCache.GetPair(marketIndex)
+
 	return types.FuturesPosition{
 		// Basic fields
-		Market:       "",
+		Market:       marketPair.From + "-" + marketPair.To,
 		Status:       types.Open,
 		Direction:    utils.IsLongAsType(p.Trade.Buy),
 		MarginType:   types.Isolated,
-		SizeUsd:      positionSize, //not sure this is how it works
+		SizeUsd:      positionSize,
 		EntryPrice:   entryPrice,
 		CurrentPrice: 0,
 

@@ -21,7 +21,7 @@ func NewKwentaOptimismClient() (*KwentaOptimismClient, error) {
 	}, nil
 }
 
-func (c *KwentaOptimismClient) FetchPositions(userId string) (*types.FuturesResponse, *types.APIError) {
+func (c *KwentaOptimismClient) FetchPositions(userId string) ([]types.FuturesPosition, *types.APIError) {
 	// Implementation for fetching positions will go here
 	return nil, nil
 }

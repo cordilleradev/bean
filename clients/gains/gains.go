@@ -73,7 +73,7 @@ func (g *GainsClient) GetLeaderboard(period string) ([]types.Trader, *types.APIE
 	return traders, nil
 }
 
-func (g *GainsClient) FetchPositions(userId string) (*types.FuturesResponse, *types.APIError) {
+func (g *GainsClient) FetchPositions(userId string) ([]types.FuturesPosition, *types.APIError) {
 	// Implementation here
 
 	return nil, nil

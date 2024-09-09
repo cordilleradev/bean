@@ -11,6 +11,7 @@ import (
 
 type EvmRpcPool[T any] struct {
 	connections []T
+	rpcUrls     []string
 	mu          sync.Mutex
 	index       int
 }
@@ -23,6 +24,7 @@ func NewCommonPoolHelper[T any](rpcUrls []string, contractAddress common.Address
 	}
 	return &EvmRpcPool[T]{
 		connections: callers,
+		rpcUrls:     rpcUrls,
 		index:       0,
 	}, nil
 }
@@ -77,4 +79,11 @@ func (p *EvmRpcPool[T]) NextCaller() T {
 	caller := p.connections[p.index]
 	p.index = (p.index + 1) % len(p.connections)
 	return caller
+}
+
+// Show the RPC URLs that are being connected to successfully
+func (p *EvmRpcPool[T]) ShowRpcs() []string {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.rpcUrls
 }

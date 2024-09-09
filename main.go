@@ -1,86 +1,169 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
-
-	"github.com/cordilleradev/bean/clients/gmx"
+	"io"
+	"log"
+	"math"
+	"net/http"
+	"net/url"
+	"strconv"
+	"strings"
+	"sync"
 )
 
-func main() {
+type UpdateResponse struct {
+	Parsed []PriceUpdate `json:"parsed"`
+}
 
-	var arbRpcs = []string{
-		"https://arbitrum.llamarpc.com",
-		"https://api.zan.top/node/v1/arb/one/public",
-		"https://api.stateless.solutions/arbitrum-one/v1/demo",
-		"https://endpoints.omniatech.io/v1/arbitrum/one/public",
-		"https://1rpc.io/arb",
-		"https://arbitrum.rpc.subquery.network/public",
-		"https://arbitrum.blockpi.network/v1/rpc/public",
-		"https://arb-pokt.nodies.app",
-		"https://arbitrum.meowrpc.com",
-		"https://arbitrum.drpc.org",
-		"https://arbitrum-one.public.blastapi.io",
-	}
+type PriceUpdate struct {
+	ID    string `json:"id"`
+	Price struct {
+		Price       string `json:"price"`
+		Conf        string `json:"conf"`
+		Expo        int    `json:"expo"`
+		PublishTime int64  `json:"publish_time"`
+	} `json:"price"`
+	EmaPrice struct {
+		Price       string `json:"price"`
+		Conf        string `json:"conf"`
+		Expo        int    `json:"expo"`
+		PublishTime int64  `json:"publish_time"`
+	} `json:"ema_price"`
+	Metadata struct {
+		Slot               int64 `json:"slot"`
+		ProofAvailableTime int64 `json:"proof_available_time"`
+		PrevPublishTime    int64 `json:"prev_publish_time"`
+	} `json:"metadata"`
+}
 
-	a, err := gmx.NewGmxArbitrumClient(arbRpcs, 1)
+type PriceCache struct {
+	URL   *url.URL
+	cache map[string]float64
+	mu    sync.RWMutex
+}
+
+func NewPriceCache() (*PriceCache, error) {
+	feedIds, err := GetFeedIds()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	address := "0x591b6F096281DD7b645767C96aC34863A4Df9a89"
-	fmt.Println("Fetching positions for address:", address)
-	p, fetchErr := a.FetchPositions(address)
-	if fetchErr != nil {
-		fmt.Printf("Error fetching positions: %v\n", fetchErr)
-		panic(fetchErr)
+	var ids []string
+	for id := range feedIds {
+		ids = append(ids, id)
 	}
 
-	pJson, jsonErr := json.MarshalIndent(p, "", "  ")
-	if jsonErr != nil {
-		fmt.Printf("Error marshalling positions to JSON: %v\n", jsonErr)
-		panic(jsonErr)
+	rawQuery := "ids[]=" + strings.Join(ids, "&ids[]=")
+	u := url.URL{Scheme: "https", Host: "hermes.pyth.network", Path: "/v2/updates/price/stream", RawQuery: rawQuery}
+
+	priceCache := &PriceCache{
+		URL:   &u,
+		cache: make(map[string]float64),
 	}
-	fmt.Println("Positions in JSON format:", string(pJson))
 
-	// baseRpcs := []string{
-	// 	"https://base.llamarpc.com",
-	// 	"https://mainnet.base.org",
-	// 	"https://developer-access-mainnet.base.org",
-	// 	"https://base-rpc.publicnode.com",
-	// 	"https://base.blockpi.network/v1/rpc/public",
-	// 	"https://base-mainnet.public.blastapi.io",
-	// 	"https://base.meowrpc.com",
-	// 	"https://endpoints.omniatech.io/v1/base/mainnet/public",
-	// 	"https://base.gateway.tenderly.co",
-	// 	"https://gateway.tenderly.co/public/base",
-	// 	"https://1rpc.io/base",
-	// 	"https://base.rpc.subquery.network/public",
-	// 	"https://base-pokt.nodies.app",
-	// 	"https://base.api.onfinality.io/public",
-	// 	"https://base.drpc.org",
-	// }
+	return priceCache, nil
+}
 
-	// fmt.Println("Creating Avantis client with RPCs:", baseRpcs)
-	// a, clientErr := avantis.NewAvantisClient(baseRpcs)
+func GetFeedIds() (map[string]string, error) {
+	resp, err := http.Get("https://raw.githubusercontent.com/Avantis-Labs/avantis_trader_sdk/main/avantis_trader_sdk/feed/feedIds.json")
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
 
-	// if clientErr != nil {
-	// 	fmt.Printf("Error creating Avantis client: %v\n", clientErr)
-	// 	panic(clientErr)
-	// }
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
 
-	// address := "0x8E1c4e0a7e85b2490f6d811824515D6FAD3115A6"
-	// fmt.Println("Fetching positions for address:", address)
-	// p, fetchErr := a.FetchPositions(address)
-	// if fetchErr != nil {
-	// 	fmt.Printf("Error fetching positions: %v\n", fetchErr)
-	// 	panic(fetchErr)
-	// }
+	var feedIds map[string]struct {
+		ID    string `json:"id"`
+		Group string `json:"group"`
+	}
 
-	// pJson, jsonErr := json.MarshalIndent(p, "", "  ")
-	// if jsonErr != nil {
-	// 	fmt.Printf("Error marshalling positions to JSON: %v\n", jsonErr)
-	// 	panic(jsonErr)
-	// }
-	// fmt.Println("Positions in JSON format:", string(pJson))
+	err = json.Unmarshal(body, &feedIds)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(map[string]string)
+	for pair, data := range feedIds {
+		pair = strings.ReplaceAll(pair, "/", "-")
+		result[data.ID] = pair
+	}
+
+	return result, nil
+}
+
+func (p *PriceCache) FetchPriceUpdates() error {
+	resp, err := http.Get(p.URL.String())
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("received non-OK HTTP status: %s", resp.Status)
+	}
+
+	scanner := bufio.NewScanner(resp.Body)
+	for scanner.Scan() {
+		if scanner.Text() != "" {
+			message := scanner.Text()[5:]
+			var updateResponse UpdateResponse
+			err := json.Unmarshal([]byte(message), &updateResponse)
+			if err != nil {
+				continue
+			}
+
+			for _, priceUpdate := range updateResponse.Parsed {
+				unformattedPrice, err := strconv.ParseFloat(priceUpdate.Price.Price, 64)
+				if err != nil {
+					continue
+				}
+				realPrice := unformattedPrice / math.Pow(10, math.Abs(float64(priceUpdate.Price.Expo)))
+				fmt.Println(realPrice, priceUpdate.ID)
+				p.mu.Lock()
+				p.cache[priceUpdate.ID] = realPrice
+				p.mu.Unlock()
+			}
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return err
+	}
+
+	return nil
+
+}
+
+func (p *PriceCache) ExportCache() map[string]float64 {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+
+	// Create a copy of the cache to export
+	cacheCopy := make(map[string]float64)
+	for k, v := range p.cache {
+		cacheCopy[k] = v
+	}
+
+	return cacheCopy
+}
+
+func main() {
+	priceCache, err := NewPriceCache()
+	if err != nil {
+		log.Fatalf("Failed to create PriceCache: %v", err)
+	}
+
+	// Use priceCache as needed
+	err = priceCache.FetchPriceUpdates()
+	if err != nil {
+		log.Fatalf("Failed to fetch price updates: %v", err)
+	}
+
 }

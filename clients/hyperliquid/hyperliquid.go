@@ -79,7 +79,7 @@ func (c *HyperliquidClient) GetLeaderboard(period string) ([]types.Trader, *type
 	return traderList, nil
 }
 
-func (c *HyperliquidClient) FetchPositions(userId string) (*types.FuturesResponse, *types.APIError) {
+func (c *HyperliquidClient) FetchPositions(userId string) ([]types.FuturesPosition, *types.APIError) {
 
 	return nil, nil
 }

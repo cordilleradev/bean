@@ -1,6 +1,7 @@
 package gmx
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/cordilleradev/bean/common"
@@ -124,7 +125,7 @@ func (g *gmxClient) GetLeaderboard(period string) ([]types.Trader, *types.APIErr
 	return traders, nil
 }
 
-func (g *gmxClient) FetchPositions(userId string) (*types.FuturesResponse, *types.APIError) {
+func (g *gmxClient) FetchPositions(userId string) ([]types.FuturesPosition, *types.APIError) {
 	if !ethCommon.IsHexAddress(userId) {
 		return nil, types.InvalidUserId(userId)
 	}
@@ -139,14 +140,10 @@ func (g *gmxClient) FetchPositions(userId string) (*types.FuturesResponse, *type
 		positionsList[i] = g.formatToFuturesPosition(p)
 	}
 
-	return &types.FuturesResponse{
-		Trader:    userId,
-		Platform:  g.ExchangeName(),
-		Positions: positionsList,
-	}, nil
+	return positionsList, nil
 }
 
-func (g *gmxClient) formatToFuturesPosition(p gmx_abis.PositionProps) types.FuturesPosition {
+func (g *gmxClient) formatToFuturesPosition(p gmx_abis.PositionProps, cache *priceCache) types.FuturesPosition {
 	market := g.marketNameMap[p.Addresses.Market.Hex()]
 	collateralTokenInfo := g.tokenMap[p.Addresses.CollateralToken.Hex()]
 
@@ -165,6 +162,9 @@ func (g *gmxClient) formatToFuturesPosition(p gmx_abis.PositionProps) types.Futu
 		(marketTokenPrice*sizeInTokens)/(collateralTokenPrice*collateralAmount),
 		5,
 	)
+
+	fundingFee := utils.BigIntToRelevantFloat(p.Numbers.FundingFeeAmountPerSize, 30, 5)
+	fmt.Println(fundingFee)
 
 	return types.FuturesPosition{
 		// Basic fields
