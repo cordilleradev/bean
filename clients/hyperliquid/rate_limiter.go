@@ -63,7 +63,7 @@ func (hm *hyperLiquidManager) resetRequests() int {
 }
 
 func (hm *hyperLiquidManager) waitForToken(requestWeight requestWeight) {
-	var millisecondsBetweenRequests int64 = 40
+	var millisecondsBetweenRequests int64 = 50
 	for {
 		lastRequestTime := time.Now().Add(time.Duration(-millisecondsBetweenRequests) * time.Millisecond)
 		hm.mu.Lock()
