@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/cordilleradev/bean/common/utils"
 )
@@ -12,6 +13,7 @@ import (
 type priceCache struct {
 	prices            map[string]float64
 	waitPeriodSeconds float64
+	pricesUrl         string
 	mu                *sync.Mutex
 }
 
@@ -20,17 +22,18 @@ func newPriceCache(waitPeriodSeconds float64, url string) (*priceCache, error) {
 		prices:            make(map[string]float64),
 		waitPeriodSeconds: waitPeriodSeconds,
 		mu:                &sync.Mutex{},
+		pricesUrl:         url,
 	}
 
-	if err := pc.updatePrices(url); err != nil {
+	if err := pc.updatePrices(); err != nil {
 		return nil, err
 	}
 
 	return pc, nil
 }
 
-func (pc *priceCache) updatePrices(url string) error {
-	resp, err := http.Get(url)
+func (pc *priceCache) updatePrices() error {
+	resp, err := http.Get(pc.pricesUrl)
 	if err != nil {
 		return err
 	}
@@ -53,6 +56,13 @@ func (pc *priceCache) updatePrices(url string) error {
 	}
 
 	return nil
+}
+
+func (pc *priceCache) streamPrices(waitSeconds float64) {
+	for {
+		time.Sleep(time.Second * time.Duration(waitSeconds))
+		pc.updatePrices()
+	}
 }
 
 func (pc *priceCache) getPrice(token string) float64 {

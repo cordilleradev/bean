@@ -1,5 +1,13 @@
 # integration_checklist
 
+current_todo:
+  - avantis:
+      - integrate price feed listener and priceCache
+  - hyperliquid:
+      - begin work on rpc pool
+        - weighted request mechanism
+        - rate limiter with token
+
 exchanges:
   - kwenta (optimism):
     fetch_leaderboard: ✅
@@ -28,5 +36,3 @@ exchanges:
   - gains network (arbitrum):
     fetch_leaderboard: ✅
     fetch_positions: ❌
-
-remove price cache and integrate into pool

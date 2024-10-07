@@ -1,7 +1,9 @@
 package hyperliquid
 
-const hyperliquidApiUrl = "https://app.hyperliquid.xyz/info"
-const hyperliquidLeaderboardUrl = "https://api-ui.hyperliquid.xyz/info"
+const hyperliquidApiUrl = "https://api.hyperliquid.xyz/info"
+const hyperLiquidUiApi = "https://api-ui.hyperliquid.xyz/info"
+const hyperliquidWsUrl = "wss://api.hyperliquid.xyz/ws"
+const leaderboardUrl = "https://stats-data.hyperliquid.xyz/Mainnet/leaderboard"
 
 var timePeriodMap map[string]string = map[string]string{
 	"1d":    "day",

@@ -6,6 +6,7 @@ toolchain go1.22.7
 
 require (
 	github.com/ethereum/go-ethereum v1.14.7
+	github.com/gorilla/websocket v1.4.2
 	github.com/machinebox/graphql v0.2.2
 )
 
@@ -23,7 +24,6 @@ require (
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/holiman/uint256 v1.3.0 // indirect
 	github.com/matryer/is v1.4.1 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect

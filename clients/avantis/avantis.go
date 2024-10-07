@@ -1,8 +1,6 @@
 package avantis
 
 import (
-	"errors"
-
 	avantis_multicall_abis "github.com/cordilleradev/bean/common/abigen/avantis/multiCall"
 	"github.com/cordilleradev/bean/common/types"
 	"github.com/cordilleradev/bean/common/utils"
@@ -15,10 +13,7 @@ type AvantisClient struct {
 }
 
 func NewAvantisClient(rpcs []string) (*AvantisClient, error) {
-	if len(rpcs) < 2 {
-		return nil, errors.New("at least two RPC URLs are required")
-	}
-	connectionPool, err := newAvantisConnectionPool(rpcs[1:], avantisMultiCallContractAddress)
+	connectionPool, err := newAvantisConnectionPool(rpcs, avantisMultiCallContractAddress)
 	if err != nil {
 		return nil, err
 	}

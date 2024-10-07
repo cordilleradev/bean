@@ -1,7 +1,6 @@
 package gmx
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/cordilleradev/bean/common"
@@ -51,6 +50,8 @@ func newGmxClient(
 	if err != nil {
 		return nil, err
 	}
+
+	go priceCache.streamPrices(waitPeriod)
 
 	return &gmxClient{
 		exchangeName:                exchangeName,
@@ -143,7 +144,7 @@ func (g *gmxClient) FetchPositions(userId string) ([]types.FuturesPosition, *typ
 	return positionsList, nil
 }
 
-func (g *gmxClient) formatToFuturesPosition(p gmx_abis.PositionProps, cache *priceCache) types.FuturesPosition {
+func (g *gmxClient) formatToFuturesPosition(p gmx_abis.PositionProps) types.FuturesPosition {
 	market := g.marketNameMap[p.Addresses.Market.Hex()]
 	collateralTokenInfo := g.tokenMap[p.Addresses.CollateralToken.Hex()]
 
@@ -163,18 +164,23 @@ func (g *gmxClient) formatToFuturesPosition(p gmx_abis.PositionProps, cache *pri
 		5,
 	)
 
-	fundingFee := utils.BigIntToRelevantFloat(p.Numbers.FundingFeeAmountPerSize, 30, 5)
-	fmt.Println(fundingFee)
+	var pnl float64
+	if p.Flags.IsLong {
+		pnl = (marketTokenPrice - entryPrice) * sizeInTokens
+	} else {
+		pnl = (entryPrice - marketTokenPrice) * sizeInTokens
+	}
 
 	return types.FuturesPosition{
 		// Basic fields
-		Market:       market.Name,
-		Status:       types.Open,
-		Direction:    utils.IsLongAsType(p.Flags.IsLong),
-		MarginType:   types.Isolated,
-		SizeUsd:      sizeInUsd,
-		EntryPrice:   entryPrice,
-		CurrentPrice: marketTokenPrice,
+		Market:        market.Name,
+		Status:        types.Open,
+		Direction:     utils.IsLongAsType(p.Flags.IsLong),
+		MarginType:    types.Isolated,
+		SizeUsd:       sizeInUsd,
+		EntryPrice:    entryPrice,
+		CurrentPrice:  marketTokenPrice,
+		UnrealizedPnl: pnl,
 
 		// Isolated Margin fields
 		CollateralToken:          collateralTokenInfo.Symbol,
