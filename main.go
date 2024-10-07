@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	pool, err := hyperliquid.NewHyperLiquidPool(false)
+	pool, err := hyperliquid.NewHyperLiquidClient(false)
 	if err != nil {
 		log.Fatalf("Failed to create HyperLiquidPool: %v", err)
 	}
@@ -36,14 +36,14 @@ func main() {
 		}
 	}()
 
-	for i := 0; i < 5000; i++ {
+	for i := 0; i < 10000; i++ {
 		wg.Add(1)
 		requestsChan <- struct{}{}
 		go func() {
 			defer wg.Done()
 			defer func() { <-requestsChan }()
 
-			p, err := pool.Positions(address)
+			p, err := pool.FetchPositions(address)
 			if err != nil {
 				log.Printf("Error fetching positions: %v", err)
 				return

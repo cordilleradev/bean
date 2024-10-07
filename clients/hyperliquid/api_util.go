@@ -9,14 +9,14 @@ import (
 	"strconv"
 )
 
-type WindowPerformance struct {
+type windowPerformance struct {
 	Timeframe string `json:"timeframe"`
 	Pnl       string `json:"pnl"`
 	Roi       string `json:"roi"`
 	Vlm       string `json:"vlm"`
 }
 
-type LeaderboardRow struct {
+type leaderboardRow struct {
 	EthAddress         string          `json:"ethAddress"`
 	AccountValue       string          `json:"accountValue"`
 	WindowPerformances [][]interface{} `json:"windowPerformances"`
@@ -24,19 +24,19 @@ type LeaderboardRow struct {
 	DisplayName        *string         `json:"displayName"`
 }
 
-type RawLeaderboardResponse struct {
-	LeaderboardRows []LeaderboardRow `json:"leaderboardRows"`
+type rawLeaderboardResponse struct {
+	LeaderboardRows []leaderboardRow `json:"leaderboardRows"`
 }
 
-type UserPosition struct {
+type userPosition struct {
 	Type     string          `json:"type"`
-	Position PositionDetails `json:"position"`
+	Position positionDetails `json:"position"`
 }
 
-type PositionDetails struct {
+type positionDetails struct {
 	Coin           string  `json:"coin"`
 	Szi            string  `json:"szi"`
-	Leverage       Lever   `json:"leverage"`
+	Leverage       lever   `json:"leverage"`
 	EntryPx        string  `json:"entryPx"`
 	PositionValue  string  `json:"positionValue"`
 	UnrealizedPnl  string  `json:"unrealizedPnl"`
@@ -44,57 +44,57 @@ type PositionDetails struct {
 	LiquidationPx  *string `json:"liquidationPx"`
 	MarginUsed     string  `json:"marginUsed"`
 	MaxLeverage    int     `json:"maxLeverage"`
-	CumFunding     Funding `json:"cumFunding"`
+	CumFunding     funding `json:"cumFunding"`
 }
 
-type Lever struct {
+type lever struct {
 	Type   string  `json:"type"`
 	Value  int     `json:"value"`
 	RawUsd *string `json:"rawUsd,omitempty"`
 }
 
-type Funding struct {
+type funding struct {
 	AllTime     string `json:"allTime"`
 	SinceOpen   string `json:"sinceOpen"`
 	SinceChange string `json:"sinceChange"`
 }
 
-type ClearingHouseState struct {
-	AssetPositions             []UserPosition `json:"assetPositions"`
+type clearingHouseState struct {
+	AssetPositions             []userPosition `json:"assetPositions"`
 	CrossMaintenanceMarginUsed string         `json:"crossMaintenanceMarginUsed"`
-	CrossMarginSummary         MarginSummary  `json:"crossMarginSummary"`
-	MarginSummary              MarginSummary  `json:"marginSummary"`
+	CrossMarginSummary         marginSummary  `json:"crossMarginSummary"`
+	MarginSummary              marginSummary  `json:"marginSummary"`
 	Time                       int64          `json:"time"`
 	Withdrawable               string         `json:"withdrawable"`
 }
 
-type MarginSummary struct {
+type marginSummary struct {
 	AccountValue    string `json:"accountValue"`
 	TotalNtlPos     string `json:"totalNtlPos"`
 	TotalRawUsd     string `json:"totalRawUsd"`
 	TotalMarginUsed string `json:"totalMarginUsed"`
 }
 
-type TraderPerformance struct {
-	Day     PeriodPerformance
-	Week    PeriodPerformance
-	Month   PeriodPerformance
-	AllTime PeriodPerformance
+type traderPerformance struct {
+	Day     periodPerformance
+	Week    periodPerformance
+	Month   periodPerformance
+	AllTime periodPerformance
 }
 
-type PeriodPerformance struct {
+type periodPerformance struct {
 	Pnl float64 `json:"pnl"`
 	Roi float64 `json:"roi"`
 	Vlm float64 `json:"vlm"`
 }
 
-type RequestWeight int
+type requestWeight int
 
 const (
-	OpenOrdersWeight         RequestWeight = 20
-	AllMidsWeight            RequestWeight = 2
-	PriceFetchWeight         RequestWeight = 2
-	ClearingHouseStateWeight               = 2
+	openOrdersWeight         requestWeight = 20
+	allMidsWeight            requestWeight = 2
+	priceFetchWeight         requestWeight = 2
+	clearingHouseStateWeight               = 2
 )
 
 func parseStringToFloat(str string) float64 {
@@ -106,7 +106,7 @@ func parseStringToFloat(str string) float64 {
 	return value
 }
 
-func leaderboardCall(client *http.Client) (map[string]TraderPerformance, error) {
+func leaderboardCall(client *http.Client) (map[string]traderPerformance, error) {
 	req, err := http.NewRequest("GET", leaderboardUrl, nil)
 	if err != nil {
 		return nil, err
@@ -128,34 +128,34 @@ func leaderboardCall(client *http.Client) (map[string]TraderPerformance, error) 
 		return nil, err
 	}
 
-	var rawResponse RawLeaderboardResponse
+	var rawResponse rawLeaderboardResponse
 	if err := json.Unmarshal(body, &rawResponse); err != nil {
 		return nil, err
 	}
 
 	performanceList := make(
-		map[string]TraderPerformance,
+		map[string]traderPerformance,
 		len(rawResponse.LeaderboardRows),
 	)
 	for _, item := range rawResponse.LeaderboardRows {
 		windowPerformances := item.WindowPerformances
-		traderPerformance := TraderPerformance{
-			Day: PeriodPerformance{
+		traderPerformance := traderPerformance{
+			Day: periodPerformance{
 				Pnl: parseStringToFloat(windowPerformances[0][1].(map[string]interface{})["pnl"].(string)),
 				Roi: parseStringToFloat(windowPerformances[0][1].(map[string]interface{})["roi"].(string)),
 				Vlm: parseStringToFloat(windowPerformances[0][1].(map[string]interface{})["vlm"].(string)),
 			},
-			Week: PeriodPerformance{
+			Week: periodPerformance{
 				Pnl: parseStringToFloat(windowPerformances[1][1].(map[string]interface{})["pnl"].(string)),
 				Roi: parseStringToFloat(windowPerformances[1][1].(map[string]interface{})["roi"].(string)),
 				Vlm: parseStringToFloat(windowPerformances[1][1].(map[string]interface{})["vlm"].(string)),
 			},
-			Month: PeriodPerformance{
+			Month: periodPerformance{
 				Pnl: parseStringToFloat(windowPerformances[2][1].(map[string]interface{})["pnl"].(string)),
 				Roi: parseStringToFloat(windowPerformances[2][1].(map[string]interface{})["roi"].(string)),
 				Vlm: parseStringToFloat(windowPerformances[2][1].(map[string]interface{})["vlm"].(string)),
 			},
-			AllTime: PeriodPerformance{
+			AllTime: periodPerformance{
 				Pnl: parseStringToFloat(windowPerformances[3][1].(map[string]interface{})["pnl"].(string)),
 				Roi: parseStringToFloat(windowPerformances[3][1].(map[string]interface{})["roi"].(string)),
 				Vlm: parseStringToFloat(windowPerformances[3][1].(map[string]interface{})["vlm"].(string)),

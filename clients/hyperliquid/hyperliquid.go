@@ -1,27 +1,31 @@
 package hyperliquid
 
 import (
+	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 
 	"github.com/cordilleradev/bean/common/types"
+	"github.com/cordilleradev/bean/common/utils"
+	ethCommon "github.com/ethereum/go-ethereum/common"
 )
 
-type HyperLiquidPool struct {
-	clients    []*HyperLiquidManager
-	priceCache *HyperLiquidPriceCache
+type HyperLiquidClient struct {
+	clients    []*hyperLiquidManager
+	priceCache *hyperLiquidPriceCache
 	mu         sync.Mutex
 
 	cacheLeaderboard bool
-	leaderboardCache map[string]TraderPerformance
+	leaderboardCache map[string]traderPerformance
 	periodSession    []string
 	roundRobinIndex  int
 	httpClient       *http.Client
 }
 
-func NewHyperLiquidPool(cacheLeaderboard bool) (*HyperLiquidPool, error) {
+func NewHyperLiquidClient(cacheLeaderboard bool) (*HyperLiquidClient, error) {
 
-	priceCache, priceCacheErr := NewHyperLiquidPriceCache(
+	priceCache, priceCacheErr := newHyperLiquidPriceCache(
 		hyperliquidApiUrl,
 		hyperliquidWsUrl,
 	)
@@ -30,30 +34,30 @@ func NewHyperLiquidPool(cacheLeaderboard bool) (*HyperLiquidPool, error) {
 		return nil, priceCacheErr
 	}
 
-	uiApiClient := NewHyperLiquidManager(1200, hyperLiquidUiApi, false)
-	defaultClient := NewHyperLiquidManager(1200, hyperliquidApiUrl, true)
+	uiApiClient := newHyperLiquidManager(1200, hyperLiquidUiApi, false)
+	defaultClient := newHyperLiquidManager(1200, hyperliquidApiUrl, true)
 
-	clientList := []*HyperLiquidManager{
+	clientList := []*hyperLiquidManager{
 		defaultClient,
 		uiApiClient,
 	}
 
-	return &HyperLiquidPool{
+	return &HyperLiquidClient{
 		clients:          clientList,
 		priceCache:       priceCache,
 		cacheLeaderboard: cacheLeaderboard,
-		leaderboardCache: make(map[string]TraderPerformance),
+		leaderboardCache: make(map[string]traderPerformance),
 		httpClient:       &http.Client{},
 	}, nil
 }
 
-func (hp *HyperLiquidPool) shouldRefreshCache(period string) bool {
+func (hp *HyperLiquidClient) shouldRefreshCache(period string) bool {
 	hp.mu.Lock()
 	defer hp.mu.Unlock()
 
 	needsRefresh := len(hp.leaderboardCache) == 0 ||
 		len(hp.periodSession) == 4 ||
-		contains(hp.periodSession, period)
+		utils.ContainsString(hp.periodSession, period)
 	if needsRefresh {
 		hp.periodSession = nil
 	} else {
@@ -62,17 +66,54 @@ func (hp *HyperLiquidPool) shouldRefreshCache(period string) bool {
 	return needsRefresh
 }
 
-func contains(slice []string, item string) bool {
-	for _, elem := range slice {
-		if elem == item {
-			return true
+func (hp *HyperLiquidClient) cycle() *hyperLiquidManager {
+
+	bestAllowance := 0
+	bestManager := hp.clients[0]
+
+	for _, m := range hp.clients[1:] {
+		if (m.allowancePerMinute - m.resetRequests()) > bestAllowance {
+			bestManager = m
 		}
 	}
-	return false
+	return bestManager
 }
 
-func (hp *HyperLiquidPool) Leaderboard(period string) ([]types.Trader, error) {
-	var response map[string]TraderPerformance
+func (hp *HyperLiquidClient) ExchangeName() string {
+	return "hyperliquid-v1-hyperliquid"
+}
+
+func (hp *HyperLiquidClient) GetSupportedMarginTypes() []types.MarginType {
+	return []types.MarginType{types.Isolated, types.Cross}
+}
+
+func (hp *HyperLiquidClient) GetLeaderboardPeriods() types.SupportedPeriods {
+	return types.NewSupportedPeriods([]string{"1d", "7d", "30d", "total"}, nil)
+}
+
+func (hp *HyperLiquidClient) GetSupportedLeaderboardFields() []types.LeaderboardField {
+	return []types.LeaderboardField{
+		types.PeriodPnlPercent,
+		types.PeriodPnlAbsolute,
+		types.Volume,
+	}
+}
+
+func (hp *HyperLiquidClient) GetLeaderboard(period string) ([]types.Trader, *types.APIError) {
+	allowedLeaderboardPeriods := hp.GetLeaderboardPeriods()
+	if !utils.ContainsString(allowedLeaderboardPeriods.FixedPeriods, period) {
+		return nil, types.InvalidPeriodError(
+			period,
+			fmt.Sprintf(
+				"allowed periods are %s",
+				strings.Join(
+					allowedLeaderboardPeriods.FixedPeriods,
+					", "),
+			),
+		)
+	}
+
+	var response map[string]traderPerformance
 	var err error
 
 	if hp.cacheLeaderboard && !hp.shouldRefreshCache(period) {
@@ -82,7 +123,7 @@ func (hp *HyperLiquidPool) Leaderboard(period string) ([]types.Trader, error) {
 	} else {
 		response, err = leaderboardCall(hp.httpClient)
 		if err != nil {
-			return nil, err
+			return nil, types.FailedLeaderboardCall(err)
 		}
 		hp.mu.Lock()
 		hp.leaderboardCache = response
@@ -130,34 +171,22 @@ func (hp *HyperLiquidPool) Leaderboard(period string) ([]types.Trader, error) {
 	return traders, nil
 }
 
-func (hp *HyperLiquidPool) cycle() *HyperLiquidManager {
-
-	bestAllowance := 0
-	bestManager := hp.clients[0]
-
-	for _, m := range hp.clients[1:] {
-		if (m.allowancePerMinute - m.resetRequests()) > bestAllowance {
-			bestManager = m
-		}
-		// fmt.Println("Allowance left", bestManager.ApiUrl, m.allowancePerMinute-m.resetRequests())
+func (hp *HyperLiquidClient) FetchPositions(userId string) ([]types.FuturesPosition, *types.APIError) {
+	if !ethCommon.IsHexAddress(userId) {
+		return nil, types.InvalidUserId(userId)
 	}
-	// fmt.Println("Going with", bestManager.ApiUrl)
-	return bestManager
-}
 
-func (hp *HyperLiquidPool) Positions(userID string) ([]types.FuturesPosition, error) {
 	var err error
-
 	for i := 0; i < len(hp.clients); i++ {
 		manager := hp.cycle()
-		manager.waitForToken(ClearingHouseStateWeight)
+		manager.waitForToken(clearingHouseStateWeight)
 
-		resp, err := makeInfoRequest[ClearingHouseState](
+		resp, err := makeInfoRequest[clearingHouseState](
 			manager.HttpClient,
 			manager.ApiUrl,
 			map[string]string{
 				"type": "clearinghouseState",
-				"user": userID,
+				"user": userId,
 			})
 
 		if err != nil {
@@ -182,7 +211,7 @@ func (hp *HyperLiquidPool) Positions(userID string) ([]types.FuturesPosition, er
 			positionDetails := types.FuturesPosition{
 				Market:         position.Position.Coin + "-USD",
 				EntryPrice:     entryPrice,
-				CurrentPrice:   hp.priceCache.GetValue(position.Position.Coin), // Update with current price from relevant source
+				CurrentPrice:   hp.priceCache.getValue(position.Position.Coin), // Update with current price from relevant source
 				Status:         types.Open,                                     // Assuming status is open for placeholder
 				Direction:      direction,                                      // Update with actual direction from relevant data
 				SizeUsd:        positionValue,
@@ -206,5 +235,5 @@ func (hp *HyperLiquidPool) Positions(userID string) ([]types.FuturesPosition, er
 
 		return positions, nil
 	}
-	return nil, err
+	return nil, types.FailedPositionsCall(err)
 }

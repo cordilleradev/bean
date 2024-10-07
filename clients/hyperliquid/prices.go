@@ -13,8 +13,8 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// HyperLiquidPriceCache maintains a live cache of prices.
-type HyperLiquidPriceCache struct {
+// hyperLiquidPriceCache maintains a live cache of prices.
+type hyperLiquidPriceCache struct {
 	url       string
 	apiUrl    string
 	mu        *sync.RWMutex
@@ -23,8 +23,8 @@ type HyperLiquidPriceCache struct {
 	done      chan struct{}
 }
 
-// NewHyperLiquidPriceCache initializes a new HyperLiquidPriceCache instance and starts the WebSocket client.
-func NewHyperLiquidPriceCache(apiUrl, wsUrl string) (*HyperLiquidPriceCache, error) {
+// newHyperLiquidPriceCache initializes a new hyperLiquidPriceCache instance and starts the WebSocket client.
+func newHyperLiquidPriceCache(apiUrl, wsUrl string) (*hyperLiquidPriceCache, error) {
 	if apiUrl == "" || wsUrl == "" {
 		return nil, fmt.Errorf("URLs cannot be empty")
 	}
@@ -37,7 +37,7 @@ func NewHyperLiquidPriceCache(apiUrl, wsUrl string) (*HyperLiquidPriceCache, err
 		return nil, fmt.Errorf("Invalid WebSocket URL: %v", err)
 	}
 
-	cache := &HyperLiquidPriceCache{
+	cache := &hyperLiquidPriceCache{
 		url:       wsUrl,
 		apiUrl:    apiUrl,
 		mu:        new(sync.RWMutex),
@@ -45,17 +45,17 @@ func NewHyperLiquidPriceCache(apiUrl, wsUrl string) (*HyperLiquidPriceCache, err
 		done:      make(chan struct{}),
 	}
 
-	if err := cache.SyncInitialPrices(); err != nil {
+	if err := cache.syncInitialPrices(); err != nil {
 		return nil, fmt.Errorf("Error synchronizing initial prices: %v", err)
 	}
 
-	go cache.Connect()
+	go cache.connect()
 
 	return cache, nil
 }
 
-// SyncInitialPrices gets the initial price data via a POST request and updates the pricesMap.
-func (cache *HyperLiquidPriceCache) SyncInitialPrices() error {
+// syncInitialPrices gets the initial price data via a POST request and updates the pricesMap.
+func (cache *hyperLiquidPriceCache) syncInitialPrices() error {
 	requestBody, err := json.Marshal(map[string]string{"type": "allMids"})
 	if err != nil {
 		return fmt.Errorf("Error marshaling request body: %v", err)
@@ -84,8 +84,8 @@ func (cache *HyperLiquidPriceCache) SyncInitialPrices() error {
 	return cache.updatePrices(response)
 }
 
-// Connect establishes the WebSocket connection and initiates the data streaming.
-func (cache *HyperLiquidPriceCache) Connect() error {
+// connect establishes the WebSocket connection and initiates the data streaming.
+func (cache *hyperLiquidPriceCache) connect() error {
 	dialer := websocket.Dialer{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
@@ -114,7 +114,7 @@ func (cache *HyperLiquidPriceCache) Connect() error {
 }
 
 // listen continuously listens to incoming WebSocket messages and updates the cache.
-func (cache *HyperLiquidPriceCache) listen() {
+func (cache *hyperLiquidPriceCache) listen() {
 	defer cache.conn.Close()
 
 	for {
@@ -138,7 +138,7 @@ func (cache *HyperLiquidPriceCache) listen() {
 }
 
 // updatePrices updates the pricesMap with the given response data.
-func (cache *HyperLiquidPriceCache) updatePrices(response map[string]interface{}) error {
+func (cache *hyperLiquidPriceCache) updatePrices(response map[string]interface{}) error {
 	// Check if the response is from the initial HTTP request or WebSocket
 	if data, dataOk := response["data"].(map[string]interface{}); dataOk {
 		channel, channelOk := response["channel"].(string)
@@ -170,16 +170,16 @@ func (cache *HyperLiquidPriceCache) updatePrices(response map[string]interface{}
 	return nil
 }
 
-// GetValue retrieves the cached value for a given key concurrently.
-func (cache *HyperLiquidPriceCache) GetValue(key string) float64 {
+// getValue retrieves the cached value for a given key concurrently.
+func (cache *hyperLiquidPriceCache) getValue(key string) float64 {
 	cache.mu.RLock()
 	defer cache.mu.RUnlock()
 	value, _ := cache.pricesMap[key]
 	return value
 }
 
-// Close signals the WebSocket listener to shut down.
-func (cache *HyperLiquidPriceCache) Close() {
+// close signals the WebSocket listener to shut down.
+func (cache *hyperLiquidPriceCache) close() {
 	close(cache.done)
 	cache.conn.Close()
 }

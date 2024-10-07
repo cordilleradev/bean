@@ -6,43 +6,43 @@ import (
 	"time"
 )
 
-type SubmittedRequest struct {
+type submittedRequest struct {
 	madeAt time.Time
-	weight RequestWeight
+	weight requestWeight
 }
 
-type HyperLiquidManager struct {
+type hyperLiquidManager struct {
 	mu                 sync.Mutex
 	allowancePerMinute int
-	submittedRequests  []*SubmittedRequest
+	submittedRequests  []*submittedRequest
 	ApiUrl             string
 	HttpClient         *http.Client
 }
 
-func NewHyperLiquidManager(
+func newHyperLiquidManager(
 	allowancePerMinute int,
 	apiUrl string,
 	initWithPriceCacheCall bool,
-) *HyperLiquidManager {
-	manager := &HyperLiquidManager{
+) *hyperLiquidManager {
+	manager := &hyperLiquidManager{
 		allowancePerMinute: allowancePerMinute,
-		submittedRequests:  []*SubmittedRequest{},
+		submittedRequests:  []*submittedRequest{},
 		ApiUrl:             apiUrl,
 		HttpClient:         &http.Client{},
 	}
 
 	if initWithPriceCacheCall {
 		manager.submittedRequests = append(manager.submittedRequests,
-			&SubmittedRequest{
+			&submittedRequest{
 				madeAt: time.Now(),
-				weight: PriceFetchWeight,
+				weight: priceFetchWeight,
 			})
 	}
 
 	return manager
 }
 
-func (hm *HyperLiquidManager) resetRequests() int {
+func (hm *hyperLiquidManager) resetRequests() int {
 	hm.mu.Lock()
 	defer hm.mu.Unlock()
 
@@ -62,12 +62,12 @@ func (hm *HyperLiquidManager) resetRequests() int {
 	return totalWeightUsed
 }
 
-func (hm *HyperLiquidManager) waitForToken(requestWeight RequestWeight) {
+func (hm *hyperLiquidManager) waitForToken(requestWeight requestWeight) {
 	for {
 		if int(requestWeight) <= hm.allowancePerMinute-hm.resetRequests() {
 
 			hm.mu.Lock()
-			hm.submittedRequests = append(hm.submittedRequests, &SubmittedRequest{
+			hm.submittedRequests = append(hm.submittedRequests, &submittedRequest{
 				madeAt: time.Now(),
 				weight: requestWeight,
 			})

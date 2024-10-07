@@ -39,3 +39,7 @@ func InvalidLimitError(limit int, allowedLimit int) *APIError {
 func FailedLeaderboardCall(err error) *APIError {
 	return NewAPIError(500, "failed_leaderboard_call", err.Error())
 }
+
+func FailedPositionsCall(err error) *APIError {
+	return NewAPIError(500, "failed_positions_call", err.Error())
+}
