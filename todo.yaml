@@ -27,7 +27,7 @@ exchanges:
 
   - hyperliquid:
     fetch_leaderboard: ✅
-    fetch_positions: ❌
+    fetch_positions: ✅
 
   - avantis.fi (base):
     fetch_leaderboard: ✅

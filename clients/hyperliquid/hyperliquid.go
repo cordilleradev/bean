@@ -34,12 +34,12 @@ func NewHyperLiquidClient(cacheLeaderboard bool) (*HyperLiquidClient, error) {
 		return nil, priceCacheErr
 	}
 
-	uiApiClient := newHyperLiquidManager(1200, hyperLiquidUiApi, false)
-	defaultClient := newHyperLiquidManager(1200, hyperliquidApiUrl, true)
+	defaultClient := newHyperLiquidManager(1000, hyperliquidApiUrl, true)
+	backupClient := newHyperLiquidManager(400, hyperLiquidUiApi, false)
 
 	clientList := []*hyperLiquidManager{
 		defaultClient,
-		uiApiClient,
+		backupClient,
 	}
 
 	return &HyperLiquidClient{
@@ -66,17 +66,22 @@ func (hp *HyperLiquidClient) shouldRefreshCache(period string) bool {
 	return needsRefresh
 }
 
-func (hp *HyperLiquidClient) cycle() *hyperLiquidManager {
+func (hp *HyperLiquidClient) cycle() []*hyperLiquidManager {
 
 	bestAllowance := 0
 	bestManager := hp.clients[0]
 
-	for _, m := range hp.clients[1:] {
-		if (m.allowancePerMinute - m.resetRequests()) > bestAllowance {
+	for _, m := range hp.clients {
+		allowance := m.allowancePerMinute - m.resetRequests()
+		if (allowance) > bestAllowance {
 			bestManager = m
+			bestAllowance = allowance
 		}
 	}
-	return bestManager
+	if bestManager.ApiUrl == hyperliquidApiUrl {
+		return []*hyperLiquidManager{bestManager}
+	}
+	return []*hyperLiquidManager{bestManager, hp.clients[0]}
 }
 
 func (hp *HyperLiquidClient) ExchangeName() string {
@@ -175,13 +180,14 @@ func (hp *HyperLiquidClient) FetchPositions(userId string) ([]types.FuturesPosit
 	if !ethCommon.IsHexAddress(userId) {
 		return nil, types.InvalidUserId(userId)
 	}
-
 	var err error
-	for i := 0; i < len(hp.clients); i++ {
-		manager := hp.cycle()
+	manager := hp.cycle()
+	for _, manager := range manager {
 		manager.waitForToken(clearingHouseStateWeight)
 
-		resp, err := makeInfoRequest[clearingHouseState](
+		var resp clearingHouseState
+
+		resp, err = makeInfoRequest[clearingHouseState](
 			manager.HttpClient,
 			manager.ApiUrl,
 			map[string]string{
@@ -235,5 +241,6 @@ func (hp *HyperLiquidClient) FetchPositions(userId string) ([]types.FuturesPosit
 
 		return positions, nil
 	}
+
 	return nil, types.FailedPositionsCall(err)
 }

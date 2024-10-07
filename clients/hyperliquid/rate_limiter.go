@@ -52,7 +52,7 @@ func (hm *hyperLiquidManager) resetRequests() int {
 	newSubmittedRequests := hm.submittedRequests[:0]
 
 	for _, request := range hm.submittedRequests {
-		if now.Sub(request.madeAt) < 1*time.Minute {
+		if now.Sub(request.madeAt) < 60*time.Second {
 			newSubmittedRequests = append(newSubmittedRequests, request)
 			totalWeightUsed += int(request.weight)
 		}
@@ -63,18 +63,28 @@ func (hm *hyperLiquidManager) resetRequests() int {
 }
 
 func (hm *hyperLiquidManager) waitForToken(requestWeight requestWeight) {
+	var millisecondsBetweenRequests int64 = 40
 	for {
-		if int(requestWeight) <= hm.allowancePerMinute-hm.resetRequests() {
+		lastRequestTime := time.Now().Add(time.Duration(-millisecondsBetweenRequests) * time.Millisecond)
+		hm.mu.Lock()
+		if len(hm.submittedRequests) > 0 {
+			lastRequestTime = hm.submittedRequests[len(hm.submittedRequests)-1].madeAt
 
-			hm.mu.Lock()
-			hm.submittedRequests = append(hm.submittedRequests, &submittedRequest{
-				madeAt: time.Now(),
-				weight: requestWeight,
-			})
-			hm.mu.Unlock()
-
-			return
 		}
-		time.Sleep(500 * time.Millisecond)
+		hm.mu.Unlock()
+		timeSinceLastRequest := time.Since(lastRequestTime).Milliseconds()
+		if timeSinceLastRequest >= millisecondsBetweenRequests {
+			if int(requestWeight) <= hm.allowancePerMinute-hm.resetRequests() {
+				hm.mu.Lock()
+				hm.submittedRequests = append(hm.submittedRequests, &submittedRequest{
+					madeAt: time.Now(),
+					weight: requestWeight,
+				})
+				hm.mu.Unlock()
+
+				return
+			}
+		}
+		time.Sleep(100 * time.Millisecond)
 	}
 }

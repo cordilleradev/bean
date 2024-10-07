@@ -14,7 +14,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to create HyperLiquidPool: %v", err)
 	}
-
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 	var totalRequests int
