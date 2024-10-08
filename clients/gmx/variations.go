@@ -2,16 +2,15 @@ package gmx
 
 // Wrapper for Avalanche
 type GmxAvalancheClient struct {
-	gmxClient
+	*gmxClient
 }
 
-func NewGmxAvalancheClient(rpcs []string, priceUpdatePeriod float64) (*GmxAvalancheClient, error) {
+func NewGmxAvalancheClient(rpcs []string) (*GmxAvalancheClient, error) {
 	baseClient, err := newGmxClient(
 		"gmx-v2-avalanche",
 		indexerGraphqlAvalanche,
 		avalancheTokensUrl,
 		avalanchePricesUrl,
-		priceUpdatePeriod,
 		rpcs,
 		avalancheReaderAddress,
 		avalancheDataStoreAddress,
@@ -21,20 +20,19 @@ func NewGmxAvalancheClient(rpcs []string, priceUpdatePeriod float64) (*GmxAvalan
 		return nil, err
 	}
 
-	return &GmxAvalancheClient{*baseClient}, nil
+	return &GmxAvalancheClient{baseClient}, nil
 }
 
 type GmxArbitrumClient struct {
-	gmxClient
+	*gmxClient
 }
 
-func NewGmxArbitrumClient(rpcs []string, priceUpdatePeriod float64) (*GmxArbitrumClient, error) {
+func NewGmxArbitrumClient(rpcs []string) (*GmxArbitrumClient, error) {
 	baseClient, err := newGmxClient(
 		"gmx-v2-arbitrum",
 		indexerGraphqlArbitrum,
 		arbitrumTokensUrl,
 		arbitrumPricesUrl,
-		priceUpdatePeriod,
 		rpcs,
 		arbitrumReaderAddress,
 		arbitrumDataStoreAddress,
@@ -44,5 +42,5 @@ func NewGmxArbitrumClient(rpcs []string, priceUpdatePeriod float64) (*GmxArbitru
 		return nil, err
 	}
 
-	return &GmxArbitrumClient{*baseClient}, nil
+	return &GmxArbitrumClient{baseClient}, nil
 }

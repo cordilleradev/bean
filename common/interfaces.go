@@ -9,9 +9,6 @@ type FuturesClient interface {
 	GetSupportedLeaderboardFields() []types.LeaderboardField
 	GetLeaderboard(period string) ([]types.Trader, *types.APIError)
 	FetchPositions(userId string) ([]types.FuturesPosition, *types.APIError)
-	// StreamPositions(
-	// 	userId string,
-	// 	refreshSeconds float64,
-	// 	positionStream chan types.FuturesResponse,
-	// ) error
+	StreamPositions(userId string, refreshWaitSeconds float64, positionStream chan types.FuturesResponse) *types.APIError
+	CancelStream(userId string) *types.APIError
 }

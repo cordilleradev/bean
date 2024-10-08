@@ -2,9 +2,12 @@ package hyperliquid
 
 import (
 	"fmt"
+	"math"
 	"net/http"
+	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/cordilleradev/bean/common/types"
 	"github.com/cordilleradev/bean/common/utils"
@@ -21,6 +24,8 @@ type HyperLiquidClient struct {
 	periodSession    []string
 	roundRobinIndex  int
 	httpClient       *http.Client
+
+	streamCancelMap map[string]chan struct{}
 }
 
 func NewHyperLiquidClient(cacheLeaderboard bool) (*HyperLiquidClient, error) {
@@ -48,6 +53,7 @@ func NewHyperLiquidClient(cacheLeaderboard bool) (*HyperLiquidClient, error) {
 		cacheLeaderboard: cacheLeaderboard,
 		leaderboardCache: make(map[string]traderPerformance),
 		httpClient:       &http.Client{},
+		streamCancelMap:  make(map[string]chan struct{}),
 	}, nil
 }
 
@@ -172,6 +178,9 @@ func (hp *HyperLiquidClient) GetLeaderboard(period string) ([]types.Trader, *typ
 
 		index++
 	}
+	sort.Slice(traders, func(i, j int) bool {
+		return traders[i].PeriodPnlAbsolute > traders[j].PeriodPnlAbsolute
+	})
 
 	return traders, nil
 }
@@ -204,7 +213,6 @@ func (hp *HyperLiquidClient) FetchPositions(userId string) ([]types.FuturesPosit
 		for index, position := range resp.AssetPositions {
 			entryPrice := parseStringToFloat(position.Position.EntryPx)
 			unrealizedPnl := parseStringToFloat(position.Position.UnrealizedPnl)
-			positionValue := parseStringToFloat(position.Position.PositionValue)
 			marginUsed := parseStringToFloat(position.Position.MarginUsed)
 			leverageAmount := float64(position.Position.Leverage.Value)
 
@@ -214,14 +222,16 @@ func (hp *HyperLiquidClient) FetchPositions(userId string) ([]types.FuturesPosit
 				direction = types.Short
 			}
 
+			sizeUsd := entryPrice * size
 			positionDetails := types.FuturesPosition{
 				Market:         position.Position.Coin + "-USD",
-				EntryPrice:     entryPrice,
-				CurrentPrice:   hp.priceCache.getValue(position.Position.Coin), // Update with current price from relevant source
-				Status:         types.Open,                                     // Assuming status is open for placeholder
-				Direction:      direction,                                      // Update with actual direction from relevant data
-				SizeUsd:        positionValue,
-				UnrealizedPnl:  unrealizedPnl,
+				EntryPrice:     utils.RoundToNDecimalsOrSigFigs(entryPrice, 5),
+				CurrentPrice:   hp.priceCache.getValue(position.Position.Coin),
+				Status:         types.Open,
+				Direction:      direction,
+				SizeUsd:        utils.RoundToNDecimalsOrSigFigs(math.Abs(sizeUsd), 5),
+				SizeToken:      utils.RoundToNDecimalsOrSigFigs(math.Abs(size), 5),
+				UnrealizedPnl:  utils.RoundToNDecimalsOrSigFigs(unrealizedPnl, 5),
 				LeverageAmount: leverageAmount,
 			}
 
@@ -232,9 +242,9 @@ func (hp *HyperLiquidClient) FetchPositions(userId string) ([]types.FuturesPosit
 
 			case "cross":
 				positionDetails.MarginType = types.Cross
-				positionDetails.HealthRatio = parseStringToFloat(position.Position.ReturnOnEquity) // Assuming Health Ratio calculated similarly
-				positionDetails.CrossMarginShare = marginUsed                                      // Example share of cross margin
-				positionDetails.FreeCollateral = parseStringToFloat(resp.Withdrawable)             // Assuming freeCollateral is related to withdrawable balance
+				positionDetails.HealthRatio = parseStringToFloat(position.Position.ReturnOnEquity)
+				positionDetails.CrossMarginShare = marginUsed
+				positionDetails.FreeCollateral = parseStringToFloat(resp.Withdrawable)
 			}
 			positions[index] = positionDetails
 		}
@@ -243,4 +253,71 @@ func (hp *HyperLiquidClient) FetchPositions(userId string) ([]types.FuturesPosit
 	}
 
 	return nil, types.FailedPositionsCall(err)
+}
+
+func (hp *HyperLiquidClient) StreamPositions(userId string, refreshWaitSeconds float64, positionStream chan types.FuturesResponse) *types.APIError {
+	hp.mu.Lock()
+	if _, exists := hp.streamCancelMap[userId]; exists {
+		hp.mu.Unlock()
+		return types.StreamAlreadyStarted(userId)
+	}
+
+	cancelChan := make(chan struct{})
+	hp.streamCancelMap[userId] = cancelChan
+	hp.mu.Unlock()
+
+	initialPositions, err := hp.FetchPositions(userId)
+	if err != nil {
+		return err
+	}
+
+	positionStream <- types.FuturesResponse{
+		Trader:             userId,
+		Platform:           hp.ExchangeName(),
+		UpdatedPositions:   initialPositions,
+		IsInitialPositions: true,
+		DetectedChanges:    make([]types.FuturesDelta, 0),
+	}
+
+	ticker := time.NewTicker(time.Duration(refreshWaitSeconds) * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			positions, err := hp.FetchPositions(userId)
+			if err != nil {
+				continue
+			}
+
+			deltas := utils.CalculatePositionDeltas(initialPositions, positions)
+			if len(deltas) != 0 {
+				positionStream <- types.FuturesResponse{
+					Trader:             userId,
+					Platform:           hp.ExchangeName(),
+					UpdatedPositions:   positions,
+					IsInitialPositions: false,
+					DetectedChanges:    deltas,
+				}
+
+				initialPositions = positions
+			}
+		case <-cancelChan:
+			return nil
+		}
+	}
+}
+
+func (hp *HyperLiquidClient) CancelStream(userId string) *types.APIError {
+	hp.mu.Lock()
+	defer hp.mu.Unlock()
+
+	cancelChan, exists := hp.streamCancelMap[userId]
+	if !exists {
+		return types.NoSuchStream(userId)
+	}
+
+	close(cancelChan)
+	delete(hp.streamCancelMap, userId)
+	return nil
 }

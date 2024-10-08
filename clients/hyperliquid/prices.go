@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -109,6 +110,7 @@ func (cache *hyperLiquidPriceCache) connect() error {
 	}
 
 	go cache.listen()
+	go cache.sendHeartbeats()
 
 	return nil
 }
@@ -168,6 +170,28 @@ func (cache *hyperLiquidPriceCache) updatePrices(response map[string]interface{}
 		cache.mu.Unlock()
 	}
 	return nil
+}
+
+// sendHeartbeats sends periodic heartbeat messages to keep the connection alive.
+func (cache *hyperLiquidPriceCache) sendHeartbeats() {
+	ticker := time.NewTicker(50 * time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-cache.done:
+			return
+		case <-ticker.C:
+			heartbeatMessage := map[string]interface{}{
+				"method": "ping",
+			}
+			cache.mu.Lock()
+			err := cache.conn.WriteJSON(heartbeatMessage)
+			cache.mu.Unlock()
+			if err != nil {
+				return
+			}
+		}
+	}
 }
 
 // getValue retrieves the cached value for a given key concurrently.

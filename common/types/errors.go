@@ -43,3 +43,11 @@ func FailedLeaderboardCall(err error) *APIError {
 func FailedPositionsCall(err error) *APIError {
 	return NewAPIError(500, "failed_positions_call", err.Error())
 }
+
+func NoSuchStream(userId string) *APIError {
+	return NewAPIError(400, "no_such_stream", fmt.Sprintf("there is no active stream for '%s'", userId))
+}
+
+func StreamAlreadyStarted(userId string) *APIError {
+	return NewAPIError(400, "stream_in_progress", fmt.Sprintf("there is already a stream in progress for '%s'", userId))
+}

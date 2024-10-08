@@ -1,6 +1,8 @@
 package gmx
 
 import (
+	"sort"
+	"sync"
 	"time"
 
 	"github.com/cordilleradev/bean/common"
@@ -15,13 +17,13 @@ type gmxClient struct {
 	common.FuturesClient
 	exchangeName                string
 	gqlClient                   *graphql.Client
-	marketNameMap               map[string]market
-	tokenMap                    map[string]tokenInfo
 	connectionPool              *gmxConnectionPool
 	gmxReaderContractAddress    string
 	gmxDataStoreContractAddress string
-	priceCache                  *priceCache
+	marketManager               *marketManager
 	tokensUrl                   string
+	streamCancelMap             map[string]chan struct{}
+	mu                          sync.Mutex
 }
 
 func newGmxClient(
@@ -29,19 +31,13 @@ func newGmxClient(
 	indexerUrl string,
 	tokensUrl string,
 	pricesUrl string,
-	waitPeriod float64,
 	rpcs []string,
 	gmxReaderContractAddress string,
 	gmxDataStoreContractAddress string,
-
 ) (*gmxClient, error) {
 	client := graphql.NewClient(indexerUrl)
-	tokenMap, marketNameMap, err := getMarkets(client, tokensUrl)
-	if err != nil {
-		return nil, err
-	}
 
-	priceCache, err := newPriceCache(waitPeriod, pricesUrl)
+	marketManager, err := newMarketManager(client, pricesUrl, tokensUrl)
 	if err != nil {
 		return nil, err
 	}
@@ -51,18 +47,15 @@ func newGmxClient(
 		return nil, err
 	}
 
-	go priceCache.streamPrices(waitPeriod)
-
 	return &gmxClient{
 		exchangeName:                exchangeName,
 		gqlClient:                   client,
-		tokenMap:                    tokenMap,
-		marketNameMap:               marketNameMap,
 		connectionPool:              connectionPool,
 		gmxReaderContractAddress:    gmxReaderContractAddress,
 		gmxDataStoreContractAddress: gmxDataStoreContractAddress,
 		tokensUrl:                   tokensUrl,
-		priceCache:                  priceCache,
+		marketManager:               marketManager,
+		streamCancelMap:             make(map[string]chan struct{}),
 	}, nil
 }
 
@@ -123,6 +116,11 @@ func (g *gmxClient) GetLeaderboard(period string) ([]types.Trader, *types.APIErr
 			Wins:              u.Wins,
 		}
 	}
+
+	sort.SliceStable(traders, func(i, j int) bool {
+		return traders[i].PeriodPnlAbsolute > traders[j].PeriodPnlAbsolute
+	})
+
 	return traders, nil
 }
 
@@ -144,48 +142,107 @@ func (g *gmxClient) FetchPositions(userId string) ([]types.FuturesPosition, *typ
 	return positionsList, nil
 }
 
-func (g *gmxClient) formatToFuturesPosition(p gmx_abis.PositionProps) types.FuturesPosition {
-	market := g.marketNameMap[p.Addresses.Market.Hex()]
-	collateralTokenInfo := g.tokenMap[p.Addresses.CollateralToken.Hex()]
+func (g *gmxClient) StreamPositions(userId string, refreshWaitSeconds float64, positionStream chan types.FuturesResponse) *types.APIError {
+	g.mu.Lock()
+	if _, exists := g.streamCancelMap[userId]; exists {
+		g.mu.Unlock()
+		return types.StreamAlreadyStarted(userId)
+	}
 
-	marketTokenAddress := market.LongToken
-	marketTokenInfo := g.tokenMap[marketTokenAddress]
+	cancelChan := make(chan struct{})
+	g.streamCancelMap[userId] = cancelChan
+	g.mu.Unlock()
+
+	initialPositions, err := g.FetchPositions(userId)
+	if err != nil {
+		return err
+	}
+
+	positionStream <- types.FuturesResponse{
+		Trader:             userId,
+		Platform:           g.ExchangeName(),
+		UpdatedPositions:   initialPositions,
+		IsInitialPositions: true,
+		DetectedChanges:    make([]types.FuturesDelta, 0),
+	}
+
+	ticker := time.NewTicker(
+		time.Duration(refreshWaitSeconds) * time.Second,
+	)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			positions, _ := g.FetchPositions(userId)
+
+			deltas := utils.CalculatePositionDeltas(initialPositions, positions)
+			if len(deltas) != 0 {
+				positionStream <- types.FuturesResponse{
+					Trader:             userId,
+					Platform:           g.ExchangeName(),
+					UpdatedPositions:   positions,
+					IsInitialPositions: false,
+					DetectedChanges:    deltas,
+				}
+
+				initialPositions = positions
+			}
+		case <-cancelChan:
+			return nil
+		}
+	}
+}
+
+func (g *gmxClient) CancelStream(userId string) *types.APIError {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+
+	cancelChan, exists := g.streamCancelMap[userId]
+	if !exists {
+		return types.NoSuchStream(userId)
+	}
+
+	close(cancelChan)
+	delete(g.streamCancelMap, userId)
+	return nil
+}
+
+func (g *gmxClient) formatToFuturesPosition(p gmx_abis.PositionProps) types.FuturesPosition {
+	market, _ := g.marketManager.getMarket(p.Addresses.Market.Hex())
+	collateralToken, _ := g.marketManager.getToken(p.Addresses.CollateralToken.String())
+	indexToken, _ := g.marketManager.getToken(market.IndexToken)
 
 	sizeInUsd := utils.BigIntToRelevantFloat(p.Numbers.SizeInUsd, 30, 5)
-	sizeInTokens := utils.BigIntToRelevantFloat(p.Numbers.SizeInTokens, float64(marketTokenInfo.Decimals), 5)
+	sizeInTokens := utils.BigIntToRelevantFloat(p.Numbers.SizeInTokens, float64(indexToken.Decimals), 5)
 	entryPrice := utils.RoundToNDecimalsOrSigFigs(sizeInUsd/sizeInTokens, 5)
-	collateralAmount := utils.BigIntToRelevantFloat(p.Numbers.CollateralAmount, float64(collateralTokenInfo.Decimals), 5)
-
-	collateralTokenPrice := g.priceCache.getPrice(p.Addresses.CollateralToken.Hex())
-	marketTokenPrice := g.priceCache.getPrice(marketTokenAddress)
-
-	leverage := utils.RoundToNDecimalsOrSigFigs(
-		(marketTokenPrice*sizeInTokens)/(collateralTokenPrice*collateralAmount),
-		5,
-	)
+	collateralAmount := utils.BigIntToRelevantFloat(p.Numbers.CollateralAmount, float64(collateralToken.Decimals), 5)
+	collateralAmountUsd := utils.RoundToNDecimalsOrSigFigs(collateralAmount*collateralToken.MidPrice, 5)
+	leverage := utils.RoundToNDecimalsOrSigFigs(sizeInUsd/collateralAmountUsd, 3)
 
 	var pnl float64
 	if p.Flags.IsLong {
-		pnl = (marketTokenPrice - entryPrice) * sizeInTokens
+		pnl = (indexToken.MidPrice - entryPrice) * sizeInTokens
 	} else {
-		pnl = (entryPrice - marketTokenPrice) * sizeInTokens
+		pnl = (entryPrice - indexToken.MidPrice) * sizeInTokens
 	}
+	pnl = utils.RoundToNDecimalsOrSigFigs(pnl, 5)
+	direction := utils.IsLongAsType(p.Flags.IsLong)
 
 	return types.FuturesPosition{
-		// Basic fields
-		Market:        market.Name,
-		Status:        types.Open,
-		Direction:     utils.IsLongAsType(p.Flags.IsLong),
-		MarginType:    types.Isolated,
-		SizeUsd:       sizeInUsd,
-		EntryPrice:    entryPrice,
-		CurrentPrice:  marketTokenPrice,
-		UnrealizedPnl: pnl,
+		Market:         indexToken.Symbol + "-" + "USD",
+		EntryPrice:     entryPrice,
+		CurrentPrice:   indexToken.MidPrice,
+		Status:         types.Open,
+		Direction:      direction,
+		MarginType:     types.Isolated,
+		SizeUsd:        sizeInUsd,
+		SizeToken:      sizeInTokens,
+		UnrealizedPnl:  pnl,
+		LeverageAmount: leverage,
 
-		// Isolated Margin fields
-		CollateralToken:          collateralTokenInfo.Symbol,
+		CollateralToken:          collateralToken.Symbol,
 		CollateralTokenAmount:    collateralAmount,
-		CollateralTokenAmountUsd: utils.RoundToNDecimalsOrSigFigs(collateralAmount*collateralTokenPrice, 5),
-		LeverageAmount:           leverage,
+		CollateralTokenAmountUsd: collateralAmountUsd,
 	}
 }
