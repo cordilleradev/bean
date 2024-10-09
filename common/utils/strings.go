@@ -50,3 +50,14 @@ func ConvertToUTCTimestamp(period string) (int64, error) {
 	timestamp = time.Date(timestamp.Year(), timestamp.Month(), timestamp.Day(), 0, 0, 0, 0, time.UTC)
 	return timestamp.Unix(), nil
 }
+
+func IsStringListSet(list []string) bool {
+	encountered := map[string]bool{}
+	for _, str := range list {
+		if encountered[str] {
+			return false
+		}
+		encountered[str] = true
+	}
+	return true
+}

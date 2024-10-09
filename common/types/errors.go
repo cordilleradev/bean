@@ -2,6 +2,8 @@ package types
 
 import (
 	"fmt"
+	"net/http"
+	"strings"
 )
 
 type APIError struct {
@@ -25,15 +27,15 @@ func NewAPIError(code int, message string, details string) *APIError {
 }
 
 func InvalidUserId(userId string) *APIError {
-	return NewAPIError(400, "invalid_user_id", fmt.Sprintf("%s is not a valid user_id", userId))
+	return NewAPIError(400, "invalid_user_id", fmt.Sprintf("'%s' is not a valid user_id", userId))
 }
 
 func InvalidPeriodError(period, message string) *APIError {
-	return NewAPIError(400, "invalid_leaderboard_period", fmt.Sprintf("%s is not a valid leaderboard period (%s)", period, message))
+	return NewAPIError(400, "invalid_leaderboard_period", fmt.Sprintf("'%s' is not a valid leaderboard period (%s)", period, message))
 }
 
 func InvalidLimitError(limit int, allowedLimit int) *APIError {
-	return NewAPIError(400, "invalid_leaderboard_limit", fmt.Sprintf("%d is greater than maximum limit (%d)", limit, allowedLimit))
+	return NewAPIError(400, "invalid_leaderboard_limit", fmt.Sprintf("'%d' is greater than maximum limit (%d)", limit, allowedLimit))
 }
 
 func FailedLeaderboardCall(err error) *APIError {
@@ -50,4 +52,28 @@ func NoSuchStream(userId string) *APIError {
 
 func StreamAlreadyStarted(userId string) *APIError {
 	return NewAPIError(400, "stream_in_progress", fmt.Sprintf("there is already a stream in progress for '%s'", userId))
+}
+
+func BlankParam(params []string) *APIError {
+	paramStr := params[0]
+	if len(params) > 1 {
+		paramStr = fmt.Sprintf("%s", params)
+		paramStr = "(" + strings.Join(params, ", ") + ")"
+	}
+	return NewAPIError(
+		400,
+		"blank_required_param",
+		fmt.Sprintf(
+			"one of the following params was blank: %s",
+			paramStr,
+		),
+	)
+}
+
+func NoSuchExchange(exchange string) *APIError {
+	return NewAPIError(
+		http.StatusBadRequest,
+		"no_such_exchange",
+		fmt.Sprintf("'%s' is not a supported exchange", exchange),
+	)
 }

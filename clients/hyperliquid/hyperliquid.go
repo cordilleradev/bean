@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math"
 	"net/http"
-	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -25,7 +24,7 @@ type HyperLiquidClient struct {
 	roundRobinIndex  int
 	httpClient       *http.Client
 
-	streamCancelMap map[string]chan struct{}
+	streamCancelMap utils.ConcurrentMap[string, chan struct{}]
 }
 
 func NewHyperLiquidClient(cacheLeaderboard bool) (*HyperLiquidClient, error) {
@@ -53,7 +52,7 @@ func NewHyperLiquidClient(cacheLeaderboard bool) (*HyperLiquidClient, error) {
 		cacheLeaderboard: cacheLeaderboard,
 		leaderboardCache: make(map[string]traderPerformance),
 		httpClient:       &http.Client{},
-		streamCancelMap:  make(map[string]chan struct{}),
+		streamCancelMap:  *utils.NewConcurrentMap[string, chan struct{}](),
 	}, nil
 }
 
@@ -110,7 +109,8 @@ func (hp *HyperLiquidClient) GetSupportedLeaderboardFields() []types.Leaderboard
 	}
 }
 
-func (hp *HyperLiquidClient) GetLeaderboard(period string) ([]types.Trader, *types.APIError) {
+func (hp *HyperLiquidClient) GetLeaderboard(period string, sortBy types.LeaderboardField, orderIsAsc bool) ([]types.Trader, *types.APIError) {
+
 	allowedLeaderboardPeriods := hp.GetLeaderboardPeriods()
 	if !utils.ContainsString(allowedLeaderboardPeriods.FixedPeriods, period) {
 		return nil, types.InvalidPeriodError(
@@ -178,10 +178,8 @@ func (hp *HyperLiquidClient) GetLeaderboard(period string) ([]types.Trader, *typ
 
 		index++
 	}
-	sort.Slice(traders, func(i, j int) bool {
-		return traders[i].PeriodPnlAbsolute > traders[j].PeriodPnlAbsolute
-	})
 
+	utils.SortByFields(sortBy, traders, orderIsAsc)
 	return traders, nil
 }
 
@@ -256,15 +254,12 @@ func (hp *HyperLiquidClient) FetchPositions(userId string) ([]types.FuturesPosit
 }
 
 func (hp *HyperLiquidClient) StreamPositions(userId string, refreshWaitSeconds float64, positionStream chan types.FuturesResponse) *types.APIError {
-	hp.mu.Lock()
-	if _, exists := hp.streamCancelMap[userId]; exists {
-		hp.mu.Unlock()
+	if _, exists := hp.streamCancelMap.Load(userId); exists {
 		return types.StreamAlreadyStarted(userId)
 	}
 
 	cancelChan := make(chan struct{})
-	hp.streamCancelMap[userId] = cancelChan
-	hp.mu.Unlock()
+	hp.streamCancelMap.Store(userId, cancelChan)
 
 	initialPositions, err := hp.FetchPositions(userId)
 	if err != nil {
@@ -308,16 +303,18 @@ func (hp *HyperLiquidClient) StreamPositions(userId string, refreshWaitSeconds f
 	}
 }
 
-func (hp *HyperLiquidClient) CancelStream(userId string) *types.APIError {
-	hp.mu.Lock()
-	defer hp.mu.Unlock()
+func (hp *HyperLiquidClient) StreamExists(userId string) bool {
+	_, exists := hp.streamCancelMap.Load(userId)
+	return exists
+}
 
-	cancelChan, exists := hp.streamCancelMap[userId]
+func (hp *HyperLiquidClient) CancelStream(userId string) *types.APIError {
+	cancelChan, exists := hp.streamCancelMap.Load(userId)
 	if !exists {
 		return types.NoSuchStream(userId)
 	}
 
 	close(cancelChan)
-	delete(hp.streamCancelMap, userId)
+	hp.streamCancelMap.Delete(userId)
 	return nil
 }

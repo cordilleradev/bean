@@ -1,5 +1,9 @@
 package types
 
+import (
+	"fmt"
+)
+
 type Trader struct {
 	UserId            string  `json:"user_id"`
 	PeriodPnlPercent  float64 `json:"period_pnl_percent,omitempty"`
@@ -22,3 +26,32 @@ const (
 	AvgWin            LeaderboardField = "avg_win"
 	AvgLoss           LeaderboardField = "avg_loss"
 )
+
+func (lf LeaderboardField) String() string {
+	return string(lf)
+}
+
+func LeaderboardFieldFromString(s string) (LeaderboardField, *APIError) {
+	switch s {
+	case "period_pnl_percent":
+		return PeriodPnlPercent, nil
+	case "period_pnl_absolute":
+		return PeriodPnlAbsolute, nil
+	case "total_trades":
+		return TotalTrades, nil
+	case "wins":
+		return Wins, nil
+	case "volume":
+		return Volume, nil
+	case "avg_win":
+		return AvgWin, nil
+	case "avg_loss":
+		return AvgLoss, nil
+	default:
+		return "", NewAPIError(
+			400,
+			"invalid_leaderboard_field",
+			fmt.Sprintf("'%s' is not a valid leaderboard field", s),
+		)
+	}
+}

@@ -1,8 +1,6 @@
 package gmx
 
 import (
-	"sort"
-	"sync"
 	"time"
 
 	"github.com/cordilleradev/bean/common"
@@ -22,8 +20,7 @@ type gmxClient struct {
 	gmxDataStoreContractAddress string
 	marketManager               *marketManager
 	tokensUrl                   string
-	streamCancelMap             map[string]chan struct{}
-	mu                          sync.Mutex
+	streamCancelMap             *utils.ConcurrentMap[string, chan struct{}]
 }
 
 func newGmxClient(
@@ -55,7 +52,7 @@ func newGmxClient(
 		gmxDataStoreContractAddress: gmxDataStoreContractAddress,
 		tokensUrl:                   tokensUrl,
 		marketManager:               marketManager,
-		streamCancelMap:             make(map[string]chan struct{}),
+		streamCancelMap:             utils.NewConcurrentMap[string, chan struct{}](),
 	}, nil
 }
 
@@ -87,7 +84,8 @@ func (g *gmxClient) GetSupportedLeaderboardFields() []types.LeaderboardField {
 	}
 }
 
-func (g *gmxClient) GetLeaderboard(period string) ([]types.Trader, *types.APIError) {
+func (g *gmxClient) GetLeaderboard(period string, sortBy types.LeaderboardField, orderIsAsc bool) ([]types.Trader, *types.APIError) {
+
 	fromTimestamp, err := utils.ConvertToUTCTimestamp(period)
 	if err != nil {
 		return nil, types.InvalidPeriodError(period, err.Error())
@@ -100,6 +98,7 @@ func (g *gmxClient) GetLeaderboard(period string) ([]types.Trader, *types.APIErr
 		return nil, types.FailedLeaderboardCall(err)
 	}
 	traders := make([]types.Trader, len(stats))
+
 	for i, u := range stats {
 		relativePnl := 0.0
 		absolutePnl := u.RealizedPnl - u.RealizedFees + u.RealizedPriceImpact
@@ -116,11 +115,7 @@ func (g *gmxClient) GetLeaderboard(period string) ([]types.Trader, *types.APIErr
 			Wins:              u.Wins,
 		}
 	}
-
-	sort.SliceStable(traders, func(i, j int) bool {
-		return traders[i].PeriodPnlAbsolute > traders[j].PeriodPnlAbsolute
-	})
-
+	utils.SortByFields(sortBy, traders, orderIsAsc)
 	return traders, nil
 }
 
@@ -143,18 +138,12 @@ func (g *gmxClient) FetchPositions(userId string) ([]types.FuturesPosition, *typ
 }
 
 func (g *gmxClient) StreamPositions(userId string, refreshWaitSeconds float64, positionStream chan types.FuturesResponse) *types.APIError {
-	g.mu.Lock()
-	if _, exists := g.streamCancelMap[userId]; exists {
-		g.mu.Unlock()
-		return types.StreamAlreadyStarted(userId)
-	}
-
-	cancelChan := make(chan struct{})
-	g.streamCancelMap[userId] = cancelChan
-	g.mu.Unlock()
+	g.streamCancelMap.Store(userId, make(chan struct{}))
+	cancelChan, _ := g.streamCancelMap.Load(userId)
 
 	initialPositions, err := g.FetchPositions(userId)
 	if err != nil {
+		g.streamCancelMap.Delete(userId)
 		return err
 	}
 
@@ -195,17 +184,19 @@ func (g *gmxClient) StreamPositions(userId string, refreshWaitSeconds float64, p
 }
 
 func (g *gmxClient) CancelStream(userId string) *types.APIError {
-	g.mu.Lock()
-	defer g.mu.Unlock()
-
-	cancelChan, exists := g.streamCancelMap[userId]
+	cancelChan, exists := g.streamCancelMap.Load(userId)
 	if !exists {
 		return types.NoSuchStream(userId)
 	}
 
 	close(cancelChan)
-	delete(g.streamCancelMap, userId)
+	g.streamCancelMap.Delete(userId)
 	return nil
+}
+
+func (g *gmxClient) StreamExists(userId string) bool {
+	_, exists := g.streamCancelMap.Load(userId)
+	return exists
 }
 
 func (g *gmxClient) formatToFuturesPosition(p gmx_abis.PositionProps) types.FuturesPosition {
