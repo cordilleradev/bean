@@ -119,6 +119,7 @@ func main() {
 			case "cron":
 				wg.Add(1)
 				log.Println("Starting Cron...")
+
 			}
 		}
 		wg.Wait()
