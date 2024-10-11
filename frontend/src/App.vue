@@ -1,26 +1,40 @@
 <template>
-  <img alt="Vue logo" src="./assets/logo.png">
-  <HelloWorld msg="Welcome to Your Vue.js App"/>
+  <div></div>
 </template>
 
-<script>
-import HelloWorld from './components/HelloWorld.vue'
+<script lang="ts">
+import { Options, Vue } from "vue-class-component";
+import { APIClient } from "./services/apiClient"; // Adjust the import path as needed
+import { InfoResponse, ExchangeInfo } from "./services/types";
 
-export default {
-  name: 'App',
-  components: {
-    HelloWorld
+@Options({
+  components: {},
+})
+export default class App extends Vue {
+  private apiClient!: APIClient;
+
+  data() {
+    return {
+      exchangeInfo: {} as { [key: string]: ExchangeInfo },
+      loading: true,
+      error: null as string | null,
+    };
+  }
+
+  created() {
+    this.apiClient = new APIClient("https://bean-4kc6.onrender.com");
+  }
+  async mounted() {
+    try {
+      const info: InfoResponse = await this.apiClient.getInfo();
+      console.log(info);
+    } catch (err) {
+      console.log(err);
+    }
   }
 }
 </script>
 
-<style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
-}
+<style scoped>
+/* Add any component-specific styles here */
 </style>

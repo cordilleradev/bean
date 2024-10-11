@@ -4,6 +4,7 @@ import (
 	"github.com/cordilleradev/bean/api/routes"
 	"github.com/cordilleradev/bean/common"
 	"github.com/cordilleradev/bean/common/types"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -25,6 +26,11 @@ func (api *ApiInstance) Run(isProd bool) {
 	}
 
 	router := gin.Default()
+
+	// Add CORS middleware to allow all origins
+	router.Use(cors.New(cors.Config{
+		AllowOrigins: []string{"*"},
+	}))
 
 	router.GET(
 		"/exchange_info",
