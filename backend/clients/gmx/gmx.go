@@ -113,13 +113,17 @@ func (g *gmxClient) GetLeaderboard(period string, sortBy types.LeaderboardField,
 			relativePnl = absolutePnl / u.MaxCapital
 		}
 
+		relativePnl = utils.RoundToNDecimalsOrSigFigs(relativePnl, 5)
+		absolutePnl = utils.RoundToNDecimalsOrSigFigs(absolutePnl, 5)
+		u.Volume = utils.RoundToNDecimalsOrSigFigs(u.Volume, 5)
+
 		traders[i] = types.Trader{
 			UserId:            u.ID,
-			PeriodPnlPercent:  relativePnl,
-			PeriodPnlAbsolute: absolutePnl,
-			Volume:            u.Volume,
-			TotalTrades:       u.ClosedCount,
-			Wins:              u.Wins,
+			PeriodPnlPercent:  &relativePnl,
+			PeriodPnlAbsolute: &absolutePnl,
+			Volume:            &u.Volume,
+			TotalTrades:       &u.ClosedCount,
+			Wins:              &u.Wins,
 		}
 	}
 	utils.SortByFields(sortBy, traders, orderIsAsc)

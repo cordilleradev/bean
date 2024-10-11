@@ -76,7 +76,7 @@ func main() {
 			log.Fatal("Failed to Init GMX_AVAX: No RPCs")
 		}
 	} else {
-		log.Println("Skipping GMX_ARB, ENABLE_GMX_ARB is not true")
+		log.Println("Skipping GMX_AVAX, ENABLE_GMX_AVAX is not true")
 	}
 
 	if os.Getenv("ENABLE_HYPERLIQUID") == "true" {

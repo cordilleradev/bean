@@ -82,7 +82,6 @@ func LiveLeaderboard(clientMap *map[string]common.FuturesClient) gin.HandlerFunc
 		if limitInt == -1 || leaderboardLen < limitInt {
 			limitInt = leaderboardLen
 		}
-
 		ctx.JSON(http.StatusOK, leaderboard[0:limitInt])
 	}
 }

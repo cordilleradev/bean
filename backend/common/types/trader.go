@@ -5,14 +5,14 @@ import (
 )
 
 type Trader struct {
-	UserId            string  `json:"user_id"`
-	PeriodPnlPercent  float64 `json:"period_pnl_percent"`
-	PeriodPnlAbsolute float64 `json:"period_pnl_absolute"`
-	TotalTrades       int     `json:"total_trades"`
-	Wins              int     `json:"wins"`
-	Volume            float64 `json:"volume"`
-	AvgWin            float64 `json:"avg_win"`
-	AvgLoss           float64 `json:"avg_loss"`
+	UserId            string   `json:"user_id"`
+	PeriodPnlPercent  *float64 `json:"period_pnl_percent,omitempty"`
+	PeriodPnlAbsolute *float64 `json:"period_pnl_absolute,omitempty"`
+	TotalTrades       *int     `json:"total_trades,omitempty"`
+	Wins              *int     `json:"wins,omitempty"`
+	Volume            *float64 `json:"volume,omitempty"`
+	AvgWin            *float64 `json:"avg_win,omitempty"`
+	AvgLoss           *float64 `json:"avg_loss,omitempty"`
 }
 
 type LeaderboardField string

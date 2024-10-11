@@ -171,9 +171,9 @@ func (hp *HyperLiquidClient) GetLeaderboard(period string, sortBy types.Leaderbo
 
 		traders[index] = types.Trader{
 			UserId:            userId,
-			PeriodPnlPercent:  periodPnlPercent,
-			PeriodPnlAbsolute: periodPnlAbsolute,
-			Volume:            periodVolume,
+			PeriodPnlPercent:  &periodPnlPercent,
+			PeriodPnlAbsolute: &periodPnlAbsolute,
+			Volume:            &periodVolume,
 		}
 
 		index++
