@@ -1,5 +1,7 @@
 <template>
-  <div></div>
+  <div>
+    <pre>{{ formattedInfo }}</pre>
+  </div>
 </template>
 
 <script lang="ts">
@@ -12,6 +14,7 @@ import { InfoResponse, ExchangeInfo } from "./services/types";
 })
 export default class App extends Vue {
   private apiClient!: APIClient;
+  formattedInfo = ""; // Added a class property for formattedInfo
 
   data() {
     return {
@@ -27,9 +30,10 @@ export default class App extends Vue {
   async mounted() {
     try {
       const info: InfoResponse = await this.apiClient.getInfo();
+      this.formattedInfo = JSON.stringify(info, null, 2);
       console.log(info);
     } catch (err) {
-      console.log(err);
+      this.formattedInfo = JSON.stringify(err, null, 2);
     }
   }
 }

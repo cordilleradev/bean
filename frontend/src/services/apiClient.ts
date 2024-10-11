@@ -19,7 +19,7 @@ export class APIClient {
   }
 
   async getInfo(): Promise<InfoResponse> {
-    return this.fetchJson<InfoResponse>("/info");
+    return this.fetchJson<InfoResponse>("/exchange_info");
   }
 
   async getLiveLeaderboard(
