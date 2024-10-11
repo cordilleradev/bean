@@ -1,6 +1,8 @@
 package api
 
 import (
+	"time"
+
 	"github.com/cordilleradev/bean/api/routes"
 	"github.com/cordilleradev/bean/common"
 	"github.com/cordilleradev/bean/common/types"
@@ -29,7 +31,12 @@ func (api *ApiInstance) Run(isProd bool) {
 
 	// Add CORS middleware to allow all origins
 	router.Use(cors.New(cors.Config{
-		AllowOrigins: []string{"*"},
+		AllowOrigins:     []string{"*"}, // Allow all origins
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
 	}))
 
 	router.GET(
