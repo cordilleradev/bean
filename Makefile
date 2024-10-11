@@ -13,7 +13,7 @@ build: $(GO_FILES)
 	@echo "Build complete."
 
 # Run the application with arguments
-run: build
+run-backend: build
 	@echo "Running the application with arguments: $(ARGS)"
 	@./$(BINARY_NAME) $(ARGS)
 
@@ -38,4 +38,4 @@ lint:
 	@echo "Linting code..."
 	@cd $(BACKEND_DIR) && go vet ./...
 
-.PHONY: all build run clean test fmt lint
+.PHONY: all build run-backend clean test fmt lint
