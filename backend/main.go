@@ -33,14 +33,13 @@ func main() {
 	}
 
 	if !isProd {
-		godotenv.Load(".env")
+		godotenv.Load("../.env")
 	}
 
 	var initErr error
 	var gmxArbClient common.FuturesClient
 	var gmxAvaxClient common.FuturesClient
 	var hyperliquidClient common.FuturesClient
-
 	arbRpcs := strings.Split(
 		os.Getenv("ARBITRUM_RPCS"),
 		",",

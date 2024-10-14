@@ -1,34 +1,68 @@
 package api
 
 import (
+	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/cordilleradev/bean/api/routes"
 	"github.com/cordilleradev/bean/common"
 	"github.com/cordilleradev/bean/common/types"
+	"github.com/cordilleradev/bean/common/utils"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 )
 
 type ApiInstance struct {
-	clientMap    *map[string]common.FuturesClient
-	positionChan chan types.FuturesResponse
+	clientMap           *map[string]common.FuturesClient
+	positionChan        chan types.FuturesResponse
+	incomingMessageChan chan routes.WebsocketMessage
+	connMap             *utils.ConnectionManager
 }
 
 func NewApiInstance(clientMap *map[string]common.FuturesClient) *ApiInstance {
 	return &ApiInstance{
-		clientMap:    clientMap,
-		positionChan: make(chan types.FuturesResponse),
+		clientMap:           clientMap,
+		positionChan:        make(chan types.FuturesResponse),
+		incomingMessageChan: make(chan routes.WebsocketMessage),
+		connMap:             utils.NewConnectionManager(),
 	}
+}
+
+func (api *ApiInstance) StartStreamHandler() {
+	ticker := time.NewTicker(50 * time.Second)
+	defer ticker.Stop()
+
+	func() {
+		for {
+			select {
+			case <-ticker.C:
+				fmt.Println("starting connection check")
+				go api.HearbeatHandler()
+			case positionUpdate := <-api.positionChan:
+				go fmt.Printf(
+					"found position response for %s\n",
+					positionUpdate.Platform+"-"+positionUpdate.Trader,
+				)
+			case incomingMessage := <-api.incomingMessageChan:
+				go fmt.Println(incomingMessage.Data)
+			}
+		}
+	}()
 }
 
 func (api *ApiInstance) Run(isProd bool) {
 	if isProd {
 		gin.SetMode(gin.ReleaseMode)
 	}
-
 	router := gin.Default()
 
+	var upgrader = websocket.Upgrader{
+		CheckOrigin: func(r *http.Request) bool {
+			return true
+		},
+	}
 	// Add CORS middleware to allow all origins
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"*"}, // Allow all origins
@@ -44,9 +78,6 @@ func (api *ApiInstance) Run(isProd bool) {
 		routes.Info(api.clientMap),
 	)
 
-	// Live leaderboard is stateless, but does all the sorting etc by itself,
-	// in production, this is cached and refreshed by the worker, and then
-	// fetched by the database.
 	router.GET(
 		"/live_leaderboard/:exchange",
 		routes.LiveLeaderboard(api.clientMap),
@@ -56,6 +87,13 @@ func (api *ApiInstance) Run(isProd bool) {
 		"/positions/:exchange/:userId",
 		routes.Positions(api.clientMap),
 	)
+
+	router.GET(
+		"/stream",
+		routes.StartStreaming(upgrader, api.connMap, api.incomingMessageChan),
+	)
+
+	go api.StartStreamHandler()
 
 	router.Run(":8080")
 
