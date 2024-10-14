@@ -31,7 +31,7 @@ func NewApiInstance(clientMap *map[string]common.FuturesClient) *ApiInstance {
 }
 
 func (api *ApiInstance) StartStreamHandler() {
-	ticker := time.NewTicker(50 * time.Second)
+	ticker := time.NewTicker(40 * time.Second)
 	defer ticker.Stop()
 
 	func() {
