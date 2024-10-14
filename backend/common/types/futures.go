@@ -9,26 +9,20 @@ type FuturesResponse struct {
 }
 
 type FuturesPosition struct {
-	Market         string     `json:"market"`
-	EntryPrice     float64    `json:"entry_price"`
-	CurrentPrice   float64    `json:"current_price"`
-	Status         Status     `json:"status"`
-	Direction      Direction  `json:"direction"`
-	MarginType     MarginType `json:"margin_type"`
-	SizeUsd        float64    `json:"size_usd"`
-	SizeToken      float64    `json:"size_tokens"`
-	UnrealizedPnl  float64    `json:"unrealized_pnl"`
-	LeverageAmount float64    `json:"leverage_amount,omitempty"`
-
-	// Isolated margin specific
-	CollateralTokenAmount    float64 `json:"collateral_token_amount,omitempty"`
-	CollateralTokenAmountUsd float64 `json:"collateral_token_amount_usd,omitempty"`
-	CollateralToken          string  `json:"collateral_token,omitempty"`
-
-	// Cross margin specific
-	HealthRatio      float64 `json:"health_ratio,omitempty"`
-	CrossMarginShare float64 `json:"cross_margin_share,omitempty"`
-	FreeCollateral   float64 `json:"free_collateral,omitempty"`
+	Market                   string     `json:"market"`
+	EntryPrice               float64    `json:"entry_price"`
+	CurrentPrice             float64    `json:"current_price"`
+	Status                   Status     `json:"status"`
+	Direction                Direction  `json:"direction"`
+	MarginType               MarginType `json:"margin_type"`
+	SizeUsd                  float64    `json:"size_usd"`
+	SizeToken                float64    `json:"size_tokens"`
+	UnrealizedPnlUsd         float64    `json:"unrealized_pnl_usd"`
+	UnrealizedPnlPercent     float64    `json:"unrealized_pnl_percent"`
+	LeverageAmount           float64    `json:"leverage_amount,omitempty"`
+	CollateralTokenAmount    float64    `json:"collateral_token_amount,omitempty"`
+	CollateralTokenAmountUsd float64    `json:"collateral_token_amount_usd,omitempty"`
+	CollateralToken          string     `json:"collateral_token,omitempty"`
 }
 
 type FuturesDelta struct {

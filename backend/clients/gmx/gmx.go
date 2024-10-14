@@ -220,7 +220,6 @@ func (g *gmxClient) formatToFuturesPosition(p gmx_abis.PositionProps) types.Futu
 	entryPrice := utils.RoundToNDecimalsOrSigFigs(sizeInUsd/sizeInTokens, 5)
 	collateralAmount := utils.BigIntToRelevantFloat(p.Numbers.CollateralAmount, float64(collateralToken.Decimals), 5)
 	collateralAmountUsd := utils.RoundToNDecimalsOrSigFigs(collateralAmount*collateralToken.MidPrice, 5)
-	leverage := utils.RoundToNDecimalsOrSigFigs(sizeInUsd/collateralAmountUsd, 3)
 
 	var pnl float64
 	if p.Flags.IsLong {
@@ -230,18 +229,20 @@ func (g *gmxClient) formatToFuturesPosition(p gmx_abis.PositionProps) types.Futu
 	}
 	pnl = utils.RoundToNDecimalsOrSigFigs(pnl, 5)
 	direction := utils.IsLongAsType(p.Flags.IsLong)
+	leverage := utils.RoundToNDecimalsOrSigFigs((sizeInUsd+pnl)/collateralAmountUsd, 3)
 
 	return types.FuturesPosition{
-		Market:         indexToken.Symbol + "-" + "USD",
-		EntryPrice:     entryPrice,
-		CurrentPrice:   indexToken.MidPrice,
-		Status:         types.Open,
-		Direction:      direction,
-		MarginType:     types.Isolated,
-		SizeUsd:        sizeInUsd,
-		SizeToken:      sizeInTokens,
-		UnrealizedPnl:  pnl,
-		LeverageAmount: leverage,
+		Market:               indexToken.Symbol + "-" + "USD",
+		EntryPrice:           entryPrice,
+		CurrentPrice:         indexToken.MidPrice,
+		Status:               types.Open,
+		Direction:            direction,
+		MarginType:           types.Isolated,
+		SizeUsd:              sizeInUsd,
+		SizeToken:            sizeInTokens,
+		UnrealizedPnlUsd:     pnl,
+		UnrealizedPnlPercent: utils.RoundToNDecimalsOrSigFigs(pnl/collateralAmountUsd, 5),
+		LeverageAmount:       leverage,
 
 		CollateralToken:          collateralToken.Symbol,
 		CollateralTokenAmount:    collateralAmount,

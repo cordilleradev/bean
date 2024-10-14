@@ -43,7 +43,7 @@ func (api *ApiInstance) Run(isProd bool) {
 	// Add CORS middleware to allow all origins
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"*"}, // Allow all origins
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowMethods:     []string{"GET"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
@@ -54,17 +54,14 @@ func (api *ApiInstance) Run(isProd bool) {
 		"/exchange_info",
 		routes.Info(api.clientMap),
 	)
-
 	router.GET(
 		"/live_leaderboard/:exchange",
 		routes.LiveLeaderboard(api.clientMap),
 	)
-
 	router.GET(
 		"/positions/:exchange/:userId",
 		routes.Positions(api.clientMap),
 	)
-
 	router.GET(
 		"/stream",
 		routes.StartStreaming(upgrader, api.connMap, api.incomingMessageChan),

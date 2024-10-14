@@ -220,30 +220,29 @@ func (hp *HyperLiquidClient) FetchPositions(userId string) ([]types.FuturesPosit
 			if size < 0 {
 				direction = types.Short
 			}
-
-			sizeUsd := entryPrice * size
+			collateral := marginUsed - (unrealizedPnl / leverageAmount)
+			sizeUsd := math.Abs(entryPrice * size)
 			positionDetails := types.FuturesPosition{
-				Market:         position.Position.Coin + "-USD",
-				EntryPrice:     utils.RoundToNDecimalsOrSigFigs(entryPrice, 5),
-				CurrentPrice:   hp.priceCache.getValue(position.Position.Coin),
-				Status:         types.Open,
-				Direction:      direction,
-				SizeUsd:        utils.RoundToNDecimalsOrSigFigs(math.Abs(sizeUsd), 5),
-				SizeToken:      utils.RoundToNDecimalsOrSigFigs(math.Abs(size), 5),
-				UnrealizedPnl:  utils.RoundToNDecimalsOrSigFigs(unrealizedPnl, 5),
-				LeverageAmount: leverageAmount,
+				Market:                   position.Position.Coin + "-USD",
+				EntryPrice:               utils.RoundToNDecimalsOrSigFigs(entryPrice, 5),
+				CurrentPrice:             hp.priceCache.getValue(position.Position.Coin),
+				Status:                   types.Open,
+				Direction:                direction,
+				SizeUsd:                  utils.RoundToNDecimalsOrSigFigs(sizeUsd, 5),
+				SizeToken:                utils.RoundToNDecimalsOrSigFigs(math.Abs(size), 5),
+				UnrealizedPnlUsd:         unrealizedPnl,
+				UnrealizedPnlPercent:     parseStringToFloat(position.Position.ReturnOnEquity),
+				LeverageAmount:           leverageAmount,
+				CollateralToken:          "USDC",
+				CollateralTokenAmount:    collateral,
+				CollateralTokenAmountUsd: collateral,
 			}
 
 			switch position.Position.Leverage.Type {
 			case "isolated":
 				positionDetails.MarginType = types.Isolated
-				positionDetails.CollateralTokenAmountUsd = marginUsed
-
 			case "cross":
 				positionDetails.MarginType = types.Cross
-				positionDetails.HealthRatio = parseStringToFloat(position.Position.ReturnOnEquity)
-				positionDetails.CrossMarginShare = marginUsed
-				positionDetails.FreeCollateral = parseStringToFloat(resp.Withdrawable)
 			}
 			positions[index] = positionDetails
 		}
