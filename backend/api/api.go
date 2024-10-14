@@ -38,8 +38,8 @@ func (api *ApiInstance) StartStreamHandler() {
 		for {
 			select {
 			case <-ticker.C:
-				fmt.Println("starting connection check")
 				go api.HearbeatHandler()
+
 			case positionUpdate := <-api.positionChan:
 				go fmt.Printf(
 					"found position response for %s\n",
@@ -94,7 +94,10 @@ func (api *ApiInstance) Run(isProd bool) {
 	)
 
 	go api.StartStreamHandler()
-
-	router.Run(":8080")
+	if isProd {
+		router.Run(":10000")
+	} else {
+		router.Run(":8080")
+	}
 
 }
