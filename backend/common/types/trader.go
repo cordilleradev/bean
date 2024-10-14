@@ -13,6 +13,7 @@ type Trader struct {
 	Volume            *float64 `json:"volume,omitempty"`
 	AvgWin            *float64 `json:"avg_win,omitempty"`
 	AvgLoss           *float64 `json:"avg_loss,omitempty"`
+	AccountValue      *float64 `json:"account_value,omitempty"`
 }
 
 type LeaderboardField string
@@ -25,6 +26,7 @@ const (
 	Volume            LeaderboardField = "volume"
 	AvgWin            LeaderboardField = "avg_win"
 	AvgLoss           LeaderboardField = "avg_loss"
+	AccountValue      LeaderboardField = "account_value"
 )
 
 func (lf LeaderboardField) String() string {
@@ -47,6 +49,8 @@ func LeaderboardFieldFromString(s string) (LeaderboardField, *APIError) {
 		return AvgWin, nil
 	case "avg_loss":
 		return AvgLoss, nil
+	case "account_value":
+		return AccountValue, nil
 	default:
 		return "", NewAPIError(
 			400,

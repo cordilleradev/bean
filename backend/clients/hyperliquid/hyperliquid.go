@@ -105,6 +105,7 @@ func (hp *HyperLiquidClient) GetSupportedLeaderboardFields() []types.Leaderboard
 	return []types.LeaderboardField{
 		types.PeriodPnlPercent,
 		types.PeriodPnlAbsolute,
+		types.AccountValue,
 		types.Volume,
 	}
 }
@@ -174,11 +175,11 @@ func (hp *HyperLiquidClient) GetLeaderboard(period string, sortBy types.Leaderbo
 			PeriodPnlPercent:  &periodPnlPercent,
 			PeriodPnlAbsolute: &periodPnlAbsolute,
 			Volume:            &periodVolume,
+			AccountValue:      &item.AccountValue,
 		}
 
 		index++
 	}
-
 	utils.SortByFields(sortBy, traders, orderIsAsc)
 	return traders, nil
 }

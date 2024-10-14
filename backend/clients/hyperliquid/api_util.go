@@ -76,10 +76,11 @@ type marginSummary struct {
 }
 
 type traderPerformance struct {
-	Day     periodPerformance
-	Week    periodPerformance
-	Month   periodPerformance
-	AllTime periodPerformance
+	AccountValue float64
+	Day          periodPerformance
+	Week         periodPerformance
+	Month        periodPerformance
+	AllTime      periodPerformance
 }
 
 type periodPerformance struct {
@@ -138,6 +139,7 @@ func leaderboardCall(client *http.Client) (map[string]traderPerformance, error) 
 		len(rawResponse.LeaderboardRows),
 	)
 	for _, item := range rawResponse.LeaderboardRows {
+		accountValue := parseStringToFloat(item.AccountValue)
 		windowPerformances := item.WindowPerformances
 		traderPerformance := traderPerformance{
 			Day: periodPerformance{
@@ -160,6 +162,7 @@ func leaderboardCall(client *http.Client) (map[string]traderPerformance, error) 
 				Roi: parseStringToFloat(windowPerformances[3][1].(map[string]interface{})["roi"].(string)),
 				Vlm: parseStringToFloat(windowPerformances[3][1].(map[string]interface{})["vlm"].(string)),
 			},
+			AccountValue: accountValue,
 		}
 		performanceList[item.EthAddress] = traderPerformance
 	}

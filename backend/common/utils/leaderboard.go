@@ -98,6 +98,16 @@ func SortByFields(field types.LeaderboardField, traders []types.Trader, isAsc bo
 				return *traders[i].AvgLoss > *traders[j].AvgLoss
 			}
 		}
+	case types.AccountValue:
+		if isAsc {
+			comparator = func(i, j int) bool {
+				return *traders[i].AccountValue < *traders[j].AccountValue
+			}
+		} else {
+			comparator = func(i, j int) bool {
+				return *traders[i].AccountValue > *traders[j].AccountValue
+			}
+		}
 	default:
 		return traders
 	}
