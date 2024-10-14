@@ -42,6 +42,13 @@ func StartStreaming(
 					var requestData map[string][]string
 					err := conn.ReadJSON(&requestData)
 					if err != nil {
+						conn.WriteJSON(
+							types.NewAPIError(
+								http.StatusBadRequest,
+								"invalid_stream_query",
+								err.Error(),
+							),
+						)
 						manager.Connections.Delete(conn)
 						conn.Close()
 						return
