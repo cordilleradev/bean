@@ -16,7 +16,7 @@ import (
 type ApiInstance struct {
 	clientMap           *map[string]common.FuturesClient
 	positionChan        chan types.FuturesResponse
-	incomingMessageChan chan routes.WebsocketMessage
+	incomingMessageChan chan routes.WebsocketMessage[map[string][]string]
 	connMap             *utils.ConnectionManager
 }
 
@@ -24,7 +24,7 @@ func NewApiInstance(clientMap *map[string]common.FuturesClient) *ApiInstance {
 	return &ApiInstance{
 		clientMap:           clientMap,
 		positionChan:        make(chan types.FuturesResponse),
-		incomingMessageChan: make(chan routes.WebsocketMessage),
+		incomingMessageChan: make(chan routes.WebsocketMessage[map[string][]string]),
 		connMap:             utils.NewConnectionManager(),
 	}
 }

@@ -1,6 +1,8 @@
 package routes
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/cordilleradev/bean/common/types"
@@ -9,15 +11,16 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-type WebsocketMessage struct {
-	Conn *websocket.Conn
-	Data map[string][]string
+type WebsocketMessage[T any] struct {
+	Conn   *websocket.Conn
+	Method string `json:"method"`
+	Data   *T     `json:"query_data"`
 }
 
 func StartStreaming(
 	upgrader websocket.Upgrader,
 	manager *utils.ConnectionManager,
-	messageChan chan WebsocketMessage,
+	messageChan chan WebsocketMessage[map[string][]string],
 ) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 
@@ -39,26 +42,55 @@ func StartStreaming(
 			for {
 				_, exists := manager.Connections.Load(conn)
 				if exists {
-					var requestData map[string][]string
-					err := conn.ReadJSON(&requestData)
+					var message WebsocketMessage[map[string][]string]
+					_, msg, err := conn.ReadMessage()
 					if err != nil {
 						conn.WriteJSON(
 							types.NewAPIError(
 								http.StatusBadRequest,
-								"invalid_stream_query",
+								"failed_websocket_conn",
 								err.Error(),
 							),
 						)
-						manager.Connections.Delete(conn)
-						conn.Close()
-						return
+						break
 					}
-					messageChan <- WebsocketMessage{
-						Conn: conn,
-						Data: requestData,
+
+					err = json.Unmarshal(msg, &message)
+					if err != nil {
+						conn.WriteJSON(
+							types.NewAPIError(
+								http.StatusBadRequest,
+								"invalid_message_format",
+								"the message was formatted improperly",
+							),
+						)
+						continue
 					}
+
+					if message.Method == "" || message.Data == nil {
+						conn.WriteJSON(
+							types.BlankParam([]string{"method", "query_data"}),
+						)
+						continue
+					}
+
+					if !utils.ContainsString([]string{"positions_query"}, message.Method) {
+						conn.WriteJSON(
+							types.NewAPIError(
+								http.StatusBadRequest,
+								"invalid_method",
+								fmt.Sprintf("'%s' is an invalid method", message.Method),
+							),
+						)
+						continue
+					}
+					messageChan <- message
+				} else {
+					return
 				}
 			}
+			manager.Connections.Delete(conn)
+			conn.Close()
 		}()
 	}
 }
