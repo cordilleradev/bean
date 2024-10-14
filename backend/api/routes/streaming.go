@@ -11,7 +11,7 @@ import (
 
 type WebsocketMessage struct {
 	Conn *websocket.Conn
-	Data map[string]string
+	Data map[string][]string
 }
 
 func StartStreaming(
@@ -39,7 +39,7 @@ func StartStreaming(
 			for {
 				_, exists := manager.Connections.Load(conn)
 				if exists {
-					var requestData map[string]string
+					var requestData map[string][]string
 					err := conn.ReadJSON(&requestData)
 					if err != nil {
 						manager.Connections.Delete(conn)
