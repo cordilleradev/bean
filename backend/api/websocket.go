@@ -1,6 +1,9 @@
 package api
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/cordilleradev/bean/common/utils"
 	"github.com/gorilla/websocket"
 )
@@ -24,4 +27,26 @@ func (api *ApiInstance) HearbeatHandler() {
 		}
 		return true
 	})
+}
+
+func (api *ApiInstance) StartStreamHandler() {
+	ticker := time.NewTicker(40 * time.Second)
+	defer ticker.Stop()
+
+	func() {
+		for {
+			select {
+			case <-ticker.C:
+				go api.HearbeatHandler()
+
+			case positionUpdate := <-api.positionChan:
+				go fmt.Printf(
+					"found position response for %s\n",
+					positionUpdate.Platform+"-"+positionUpdate.Trader,
+				)
+			case incomingMessage := <-api.incomingMessageChan:
+				go fmt.Println(incomingMessage.Data)
+			}
+		}
+	}()
 }

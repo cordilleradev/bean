@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 
@@ -28,28 +27,6 @@ func NewApiInstance(clientMap *map[string]common.FuturesClient) *ApiInstance {
 		incomingMessageChan: make(chan routes.WebsocketMessage),
 		connMap:             utils.NewConnectionManager(),
 	}
-}
-
-func (api *ApiInstance) StartStreamHandler() {
-	ticker := time.NewTicker(40 * time.Second)
-	defer ticker.Stop()
-
-	func() {
-		for {
-			select {
-			case <-ticker.C:
-				go api.HearbeatHandler()
-
-			case positionUpdate := <-api.positionChan:
-				go fmt.Printf(
-					"found position response for %s\n",
-					positionUpdate.Platform+"-"+positionUpdate.Trader,
-				)
-			case incomingMessage := <-api.incomingMessageChan:
-				go fmt.Println(incomingMessage.Data)
-			}
-		}
-	}()
 }
 
 func (api *ApiInstance) Run(isProd bool) {
