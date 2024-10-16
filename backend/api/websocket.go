@@ -35,7 +35,7 @@ func (api *ApiInstance) HearbeatHandler() {
 	api.connMap.Connections.Range(func(conn *utils.ConcurrentConn, _ *utils.ConcurrentSet[string]) bool {
 		if !hitConnections.Contains(conn) {
 			if conn != nil {
-				err := conn.WriteJson(map[string]string{
+				err := conn.WriteJSON(map[string]string{
 					"method": "heartbeat",
 				})
 				if err != nil {
@@ -54,13 +54,13 @@ func (api ApiInstance) isNewPositionMessageValid(incomingMessage routes.Websocke
 	for exchange, userIds := range *incomingMessage.Data {
 		client, exists := (*api.clientMap)[exchange]
 		if !exists {
-			incomingMessage.Conn.WriteJson(
+			incomingMessage.Conn.WriteJSON(
 				types.NoSuchExchange(exchange),
 			)
 			return false
 		}
 		if len(userIds) == 0 {
-			incomingMessage.Conn.WriteJson(
+			incomingMessage.Conn.WriteJSON(
 				types.NewAPIError(
 					http.StatusBadRequest,
 					"no_user_ids_provided",
@@ -71,7 +71,7 @@ func (api ApiInstance) isNewPositionMessageValid(incomingMessage routes.Websocke
 		}
 		for _, userId := range userIds {
 			if !client.ValidUserId(userId) {
-				incomingMessage.Conn.WriteJson(
+				incomingMessage.Conn.WriteJSON(
 					types.InvalidUserId(userId),
 				)
 				return false
@@ -83,6 +83,7 @@ func (api ApiInstance) isNewPositionMessageValid(incomingMessage routes.Websocke
 
 func (api *ApiInstance) RegisterNewStreams(incomingMessage routes.WebsocketMessage[map[string][]string]) {
 	streamSet, e := api.connMap.Connections.Load(incomingMessage.Conn)
+	fmt.Println(streamSet.String())
 	if e {
 		if api.isNewPositionMessageValid(incomingMessage) {
 			for exchange, userIds := range *incomingMessage.Data {
@@ -94,9 +95,9 @@ func (api *ApiInstance) RegisterNewStreams(incomingMessage routes.WebsocketMessa
 						if client.StreamExists(userId) {
 							positions, err := client.FetchPositions(userId)
 							if err != nil {
-								incomingMessage.Conn.WriteJson(err)
+								incomingMessage.Conn.WriteJSON(err)
 							} else {
-								incomingMessage.Conn.WriteJson(
+								incomingMessage.Conn.WriteJSON(
 									types.FuturesResponse{
 										Trader:             userId,
 										Platform:           exchange,
@@ -109,6 +110,14 @@ func (api *ApiInstance) RegisterNewStreams(incomingMessage routes.WebsocketMessa
 						} else {
 							go client.StreamPositions(userId, 5, api.positionChan)
 						}
+					} else {
+						incomingMessage.Conn.WriteJSON(
+							types.NewAPIError(
+								http.StatusBadRequest,
+								"already_streaming",
+								fmt.Sprintf("stream already initialized for '%s'", key),
+							),
+						)
 					}
 				}
 			}
@@ -118,12 +127,11 @@ func (api *ApiInstance) RegisterNewStreams(incomingMessage routes.WebsocketMessa
 }
 
 func (api *ApiInstance) PositionUpdater(update types.FuturesResponse) {
-
 	key := update.Platform + "-" + update.Trader
 	api.connMap.Connections.Range(func(conn *utils.ConcurrentConn, subscribedUserIds *utils.ConcurrentSet[string]) bool {
 		subscribedUserIds.Range(func(item string) bool {
 			if item == key {
-				go conn.WriteJson(update)
+				go conn.WriteJSON(update)
 			}
 			return true
 		})

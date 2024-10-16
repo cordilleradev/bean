@@ -17,7 +17,7 @@ func NewConcurrentConn(conn *websocket.Conn) *ConcurrentConn {
 	}
 }
 
-func (c *ConcurrentConn) WriteJson(v interface{}) error {
+func (c *ConcurrentConn) WriteJSON(v interface{}) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return c.conn.WriteJSON(v)
@@ -27,4 +27,10 @@ func (c *ConcurrentConn) Close() error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return c.conn.Close()
+}
+
+func (c *ConcurrentConn) ReadMessage() (messageType int, p []byte, err error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.conn.ReadMessage()
 }

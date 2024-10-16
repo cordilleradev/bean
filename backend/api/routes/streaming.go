@@ -49,7 +49,7 @@ func StartStreaming(
 					var message WebsocketMessage[map[string][]string]
 					_, msg, err := conn.ReadMessage()
 					if err != nil {
-						conn.WriteJSON(
+						cConn.WriteJSON(
 							types.NewAPIError(
 								http.StatusBadRequest,
 								"failed_websocket_conn",
@@ -61,7 +61,7 @@ func StartStreaming(
 
 					err = json.Unmarshal(msg, &message)
 					if err != nil {
-						conn.WriteJSON(
+						cConn.WriteJSON(
 							types.NewAPIError(
 								http.StatusBadRequest,
 								"invalid_message_format",
@@ -72,14 +72,14 @@ func StartStreaming(
 					}
 
 					if message.Method == "" || message.Data == nil {
-						conn.WriteJSON(
+						cConn.WriteJSON(
 							types.BlankParam([]string{"method", "query_data"}),
 						)
 						continue
 					}
 
 					if !utils.ContainsString([]string{"positions_query"}, message.Method) {
-						conn.WriteJSON(
+						cConn.WriteJSON(
 							types.NewAPIError(
 								http.StatusBadRequest,
 								"invalid_method",
@@ -88,8 +88,7 @@ func StartStreaming(
 						)
 						continue
 					}
-					message.Conn = utils.NewConcurrentConn(conn)
-					manager.Connections.Store(message.Conn, utils.NewConcurrentSet[string]())
+					message.Conn = cConn
 					messageChan <- message
 				} else {
 					return

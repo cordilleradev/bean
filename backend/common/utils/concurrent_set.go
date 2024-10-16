@@ -1,6 +1,9 @@
 package utils
 
-import "sync"
+import (
+	"fmt"
+	"sync"
+)
 
 type ConcurrentSet[T comparable] struct {
 	mu sync.RWMutex
@@ -46,4 +49,17 @@ func (c *ConcurrentSet[T]) Range(f func(item T) bool) {
 			break
 		}
 	}
+}
+
+
+func (c *ConcurrentSet[T]) String() string {
+ c.mu.RLock()
+ defer c.mu.RUnlock()
+
+ var items []T
+ for k := range c.s {
+  items = append(items, k)
+ }
+
+ return fmt.Sprintf("%v", items)
 }
