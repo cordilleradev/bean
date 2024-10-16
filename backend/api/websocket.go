@@ -32,7 +32,7 @@ func (api *ApiInstance) StartStreamHandler() {
 
 func (api *ApiInstance) HearbeatHandler() {
 	hitConnections := utils.NewConcurrentSet[*utils.ConcurrentConn]()
-	api.connMap.Connections.Range(func(conn *utils.ConcurrentConn, _ *utils.ConcurrentSet[string]) bool {
+	api.connMap.Connections.Range(func(conn *utils.ConcurrentConn, subscribedStreams *utils.ConcurrentSet[string]) bool {
 		if !hitConnections.Contains(conn) {
 			if conn != nil {
 				err := conn.WriteJSON(map[string]string{
@@ -83,13 +83,12 @@ func (api ApiInstance) isNewPositionMessageValid(incomingMessage routes.Websocke
 
 func (api *ApiInstance) RegisterNewStreams(incomingMessage routes.WebsocketMessage[map[string][]string]) {
 	streamSet, e := api.connMap.Connections.Load(incomingMessage.Conn)
-	fmt.Println(streamSet.String())
 	if e {
 		if api.isNewPositionMessageValid(incomingMessage) {
 			for exchange, userIds := range *incomingMessage.Data {
 				client, _ := (*api.clientMap)[exchange]
 				for _, userId := range userIds {
-					key := exchange + "-" + userId
+					key := exchange + "/" + userId
 					if !streamSet.Contains(key) {
 						streamSet.Add(key)
 						if client.StreamExists(userId) {
@@ -127,7 +126,7 @@ func (api *ApiInstance) RegisterNewStreams(incomingMessage routes.WebsocketMessa
 }
 
 func (api *ApiInstance) PositionUpdater(update types.FuturesResponse) {
-	key := update.Platform + "-" + update.Trader
+	key := update.Platform + "/" + update.Trader
 	api.connMap.Connections.Range(func(conn *utils.ConcurrentConn, subscribedUserIds *utils.ConcurrentSet[string]) bool {
 		subscribedUserIds.Range(func(item string) bool {
 			if item == key {

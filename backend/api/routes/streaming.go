@@ -88,6 +88,7 @@ func StartStreaming(
 						)
 						continue
 					}
+
 					message.Conn = cConn
 					messageChan <- message
 				} else {

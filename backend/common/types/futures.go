@@ -32,10 +32,7 @@ type FuturesDelta struct {
 	SizeDelta     float64   `json:"size_tokens_delta"`
 	SizeUsdDelta  float64   `json:"size_usd_delta"`
 	LeverageDelta float64   `json:"leverage_delta"`
-
-	// Isolated margin specific
-	CollateralToken            string  `json:"collateral_token,omitempty"`
-	CollateralTokenAmountDelta float64 `json:"collateral_token_amount_delta,omitempty"`
+	RealizedPnl   float64   `json:"realized_pnl"`
 }
 
 type Direction string

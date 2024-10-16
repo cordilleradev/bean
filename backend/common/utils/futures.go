@@ -78,11 +78,6 @@ func calculateDelta(oldPos, newPos types.FuturesPosition) *types.FuturesDelta {
 		LeverageDelta: leverageDelta,
 	}
 
-	if newPos.MarginType == types.Isolated {
-		delta.CollateralToken = newPos.CollateralToken
-		delta.CollateralTokenAmountDelta = RoundToNDecimalsOrSigFigs(newPos.CollateralTokenAmount-oldPos.CollateralTokenAmount, 5)
-	}
-
 	return &delta
 }
 
@@ -103,11 +98,6 @@ func createNewPositionDelta(newPos types.FuturesPosition) types.FuturesDelta {
 		LeverageDelta: RoundToNDecimalsOrSigFigs(newPos.LeverageAmount, 5),
 	}
 
-	if newPos.MarginType == types.Isolated {
-		delta.CollateralToken = newPos.CollateralToken
-		delta.CollateralTokenAmountDelta = RoundToNDecimalsOrSigFigs(newPos.CollateralTokenAmount, 5)
-	}
-
 	return delta
 }
 
@@ -119,11 +109,6 @@ func createRemovedPositionDelta(oldPos types.FuturesPosition) types.FuturesDelta
 		SizeDelta:     RoundToNDecimalsOrSigFigs(-oldPos.SizeToken, 5),
 		SizeUsdDelta:  RoundToNDecimalsOrSigFigs(-oldPos.SizeUsd, 5),
 		LeverageDelta: RoundToNDecimalsOrSigFigs(-oldPos.LeverageAmount, 5),
-	}
-
-	if oldPos.MarginType == types.Isolated {
-		delta.CollateralToken = oldPos.CollateralToken
-		delta.CollateralTokenAmountDelta = RoundToNDecimalsOrSigFigs(-oldPos.CollateralTokenAmount, 5)
 	}
 
 	return delta
