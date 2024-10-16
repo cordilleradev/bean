@@ -110,6 +110,10 @@ func (hp *HyperLiquidClient) GetSupportedLeaderboardFields() []types.Leaderboard
 	}
 }
 
+func (hp *HyperLiquidClient) ValidUserId(userId string) bool {
+	return ethCommon.IsHexAddress(userId)
+}
+
 func (hp *HyperLiquidClient) GetLeaderboard(period string, sortBy types.LeaderboardField, orderIsAsc bool) ([]types.Trader, *types.APIError) {
 
 	allowedLeaderboardPeriods := hp.GetLeaderboardPeriods()
@@ -220,7 +224,7 @@ func (hp *HyperLiquidClient) FetchPositions(userId string) ([]types.FuturesPosit
 			if size < 0 {
 				direction = types.Short
 			}
-			collateral := marginUsed - (unrealizedPnl / leverageAmount)
+			collateral := utils.RoundToNDecimalsOrSigFigs(marginUsed-(unrealizedPnl/leverageAmount), 5)
 			sizeUsd := math.Abs(entryPrice * size)
 			positionDetails := types.FuturesPosition{
 				Market:                   position.Position.Coin + "-USD",

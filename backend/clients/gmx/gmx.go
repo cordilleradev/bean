@@ -75,6 +75,10 @@ func (g *gmxClient) GetLeaderboardPeriods() types.SupportedPeriods {
 	)
 }
 
+func (hp *gmxClient) ValidUserId(userId string) bool {
+	return ethCommon.IsHexAddress(userId)
+}
+
 func (g *gmxClient) GetSupportedLeaderboardFields() []types.LeaderboardField {
 	return []types.LeaderboardField{
 		types.PeriodPnlPercent,
@@ -229,7 +233,7 @@ func (g *gmxClient) formatToFuturesPosition(p gmx_abis.PositionProps) types.Futu
 	}
 	pnl = utils.RoundToNDecimalsOrSigFigs(pnl, 5)
 	direction := utils.IsLongAsType(p.Flags.IsLong)
-	leverage := utils.RoundToNDecimalsOrSigFigs((sizeInUsd+pnl)/collateralAmountUsd, 3)
+	leverage := utils.RoundToNDecimalsOrSigFigs(sizeInUsd/collateralAmountUsd, 3)
 
 	return types.FuturesPosition{
 		Market:               indexToken.Symbol + "-" + "USD",

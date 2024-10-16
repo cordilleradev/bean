@@ -12,7 +12,7 @@ import (
 )
 
 type WebsocketMessage[T any] struct {
-	Conn   *websocket.Conn
+	Conn   *utils.ConcurrentConn
 	Method string `json:"method"`
 	Data   *T     `json:"query_data"`
 }
@@ -36,11 +36,15 @@ func StartStreaming(
 			)
 			return
 		}
-		manager.Connections.Store(conn, nil)
-
+		cConn := utils.NewConcurrentConn(conn)
+		manager.Connections.Store(cConn, utils.NewConcurrentSet[string]())
 		go func() {
+			defer func() {
+				manager.Connections.Delete(cConn)
+				conn.Close()
+			}()
 			for {
-				_, exists := manager.Connections.Load(conn)
+				_, exists := manager.Connections.Load(cConn)
 				if exists {
 					var message WebsocketMessage[map[string][]string]
 					_, msg, err := conn.ReadMessage()
@@ -84,13 +88,13 @@ func StartStreaming(
 						)
 						continue
 					}
+					message.Conn = utils.NewConcurrentConn(conn)
+					manager.Connections.Store(message.Conn, utils.NewConcurrentSet[string]())
 					messageChan <- message
 				} else {
 					return
 				}
 			}
-			manager.Connections.Delete(conn)
-			conn.Close()
 		}()
 	}
 }

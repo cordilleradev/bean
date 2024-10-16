@@ -65,7 +65,7 @@ func calculateDelta(oldPos, newPos types.FuturesPosition) *types.FuturesDelta {
 	sizeUsdDelta := RoundToNDecimalsOrSigFigs(newPos.SizeUsd-oldPos.SizeUsd, 5)
 	leverageDelta := RoundToNDecimalsOrSigFigs(newPos.LeverageAmount-oldPos.LeverageAmount, 5)
 
-	if !shouldAddDelta(oldPos, entryPriceDelta, sizeDelta, leverageDelta) {
+	if !shouldAddDelta(oldPos, newPos, entryPriceDelta, sizeDelta, leverageDelta) {
 		return nil
 	}
 
@@ -86,11 +86,11 @@ func calculateDelta(oldPos, newPos types.FuturesPosition) *types.FuturesDelta {
 	return &delta
 }
 
-func shouldAddDelta(oldPos types.FuturesPosition, entryPriceDelta, sizeDelta, leverageDelta float64) bool {
+func shouldAddDelta(oldPos, newPos types.FuturesPosition, entryPriceDelta, sizeDelta, leverageDelta float64) bool {
 	return math.Abs(entryPriceDelta/oldPos.EntryPrice) > 0.001 ||
 		math.Abs(sizeDelta/oldPos.SizeToken) > 0.001 ||
-		math.Abs(leverageDelta/oldPos.LeverageAmount) > 0.001 ||
-		(oldPos.MarginType == types.Isolated && math.Abs(sizeDelta/oldPos.CollateralTokenAmount) > 0.001)
+		math.Abs(leverageDelta/oldPos.LeverageAmount) > 1 ||
+		oldPos.MarginType != newPos.MarginType
 }
 
 func createNewPositionDelta(newPos types.FuturesPosition) types.FuturesDelta {

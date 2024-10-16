@@ -21,7 +21,7 @@ func LeaderboardFieldSortAllowed(field string, allowedFields []types.Leaderboard
 	}
 
 	return nil, types.NewAPIError(400, "field_not_supported",
-		fmt.Sprintf("'%s' is not a supported leaderboard field for this exchange", field),
+		fmt.Sprintf("'%s' is not a supported sort_by leaderboard field for this exchange", field),
 	)
 }
 

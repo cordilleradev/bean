@@ -7,6 +7,7 @@ type FuturesClient interface {
 	GetSupportedMarginTypes() []types.MarginType
 	GetLeaderboardPeriods() types.SupportedPeriods
 	GetSupportedLeaderboardFields() []types.LeaderboardField
+	ValidUserId(userId string) bool
 	FetchPositions(userId string) ([]types.FuturesPosition, *types.APIError)
 	GetLeaderboard(period string, sortBy types.LeaderboardField, orderIsAsc bool) ([]types.Trader, *types.APIError)
 	StreamPositions(userId string, refreshWaitSeconds float64, positionStream chan types.FuturesResponse) *types.APIError

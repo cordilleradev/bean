@@ -68,6 +68,7 @@ func (api *ApiInstance) Run(isProd bool) {
 	)
 
 	go api.StartStreamHandler()
+
 	if isProd {
 		router.Run(":10000")
 	} else {
